@@ -1,0 +1,2521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ensemble — Netflix Workforce Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --red: #E50914;
+    --red-dim: #8B0000;
+    --black: #0A0A0A;
+    --surface: #111111;
+    --surface2: #1A1A1A;
+    --surface3: #252525;
+    --border: #2A2A2A;
+    --text: #F0F0F0;
+    --text-dim: #888888;
+    --text-muted: #555555;
+    --green: #2ECC71;
+    --amber: #F39C12;
+    --blue: #3498DB;
+    --purple: #9B59B6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .shell { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px; min-width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 200;
+  }
+
+  .logo {
+    padding: 22px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-n { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--red); line-height: 1; }
+  .logo-text { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); line-height: 1.4; }
+
+  .nav { padding: 14px 0; flex: 1; overflow-y: auto; }
+  .nav-section { padding: 8px 20px 4px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); font-weight: 500; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 20px; cursor: pointer;
+    color: var(--text-dim); font-size: 13px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--text); border-left-color: var(--red); background: var(--surface2); font-weight: 500; }
+  .nav-icon { font-size: 14px; width: 18px; text-align: center; }
+
+  .sidebar-footer { padding: 14px 20px; border-top: 1px solid var(--border); }
+  .avatar { width: 28px; height: 28px; background: var(--red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: white; font-family: 'DM Mono', monospace; }
+
+  /* Main */
+  .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 28px; height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-title { font-family: 'DM Serif Display', serif; font-size: 18px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .badge-pill {
+    background: var(--surface3); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 11px;
+    font-size: 11px; color: var(--text-dim); font-family: 'DM Mono', monospace;
+  }
+  .badge-pill.live { border-color: var(--green); color: var(--green); }
+  .badge-pill.live::before { content: '● '; font-size: 8px; }
+
+  .content { padding: 24px 28px; }
+
+  /* AI Bar */
+  .ai-bar {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 14px;
+    transition: border-color 0.2s;
+  }
+  .ai-bar:focus-within { border-color: var(--red); }
+  .ai-bar-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); font-weight: 600; white-space: nowrap; font-family: 'DM Mono', monospace; }
+  .ai-input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; }
+  .ai-input::placeholder { color: var(--text-muted); }
+  .ai-btn { background: var(--red); color: white; border: none; border-radius: 5px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+  .ai-btn:hover { background: #c0070f; }
+  .ai-btn:disabled { background: var(--surface3); color: var(--text-muted); cursor: not-allowed; }
+
+  .query-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 20px; }
+  .query-chip { padding: 5px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 11px; color: var(--text-dim); cursor: pointer; transition: all 0.15s; }
+  .query-chip:hover { border-color: var(--red); color: var(--text); }
+
+  .ai-response {
+    background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--red);
+    border-radius: 6px; padding: 14px 18px; margin-bottom: 22px;
+    font-size: 13px; line-height: 1.75; color: var(--text);
+    display: none; animation: fadeIn 0.3s ease;
+  }
+  .ai-response.visible { display: block; }
+  .ai-response-header { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); font-family: 'DM Mono', monospace; margin-bottom: 8px; font-weight: 600; }
+
+  .dot-pulse { display: flex; gap: 4px; align-items: center; }
+  .dot-pulse span { width: 6px; height: 6px; background: var(--red); border-radius: 50%; animation: pulse 1.2s infinite; }
+  .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse { 0%,80%,100% { opacity:0.2; transform:scale(0.8); } 40% { opacity:1; transform:scale(1); } }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+  @keyframes overlayIn { from { opacity:0; } to { opacity:1; } }
+
+  /* Segment Tabs */
+  .seg-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* KPI Row */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; position: relative; overflow: hidden; transition: border-color 0.2s, transform 0.15s; cursor: default; }
+  .kpi-card:hover { border-color: var(--text-muted); }
+  .kpi-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; }
+  .kpi-card.green::after { background: var(--green); }
+  .kpi-card.amber::after { background: var(--amber); }
+  .kpi-card.red::after { background: var(--red); }
+  .kpi-card.blue::after { background: var(--blue); }
+  .kpi-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; font-family: 'DM Mono', monospace; }
+  .kpi-value { font-family: 'DM Serif Display', serif; font-size: 30px; line-height: 1; margin-bottom: 5px; transition: all 0.3s; }
+  .kpi-sub { font-size: 11px; color: var(--text-dim); }
+  .kpi-delta { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-family: 'DM Mono', monospace; font-weight: 500; margin-left: 4px; }
+  .kpi-delta.up { background: rgba(46,204,113,0.15); color: var(--green); }
+  .kpi-delta.down { background: rgba(229,9,20,0.15); color: var(--red); }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+  /* Panel */
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .panel-header { padding: 13px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .panel-title { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+  .panel-action { font-size: 11px; color: var(--red); cursor: pointer; font-weight: 500; }
+  .panel-body { padding: 14px 18px; }
+
+  /* Risk Table */
+  .risk-table { width: 100%; border-collapse: collapse; }
+  .risk-table th { text-align: left; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 0 0 10px; border-bottom: 1px solid var(--border); font-weight: 500; font-family: 'DM Mono', monospace; }
+  .risk-table td { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  .risk-table tr:last-child td { border-bottom: none; }
+  .risk-table th:not(:first-child), .risk-table td:not(:first-child) { padding-left: 12px; }
+  .risk-row { cursor: pointer; transition: background 0.15s; border-radius: 4px; }
+  .risk-row:hover td { background: var(--surface2); }
+  .risk-row:hover .name-cell { color: var(--red); }
+  .name-cell { font-weight: 500; transition: color 0.15s; }
+  .role-cell { color: var(--text-dim); font-size: 12px; margin-top: 1px; }
+
+  .risk-bar-wrap { width: 80px; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+  .risk-bar { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+
+  .segment-chip { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; font-family: 'DM Mono', monospace; }
+  .chip-corporate { background: rgba(52,152,219,0.15); color: var(--blue); }
+  .chip-studio { background: rgba(255,107,107,0.15); color: #ff6b6b; }
+  .chip-union { background: rgba(155,89,182,0.15); color: var(--purple); }
+  .chip-freelance { background: rgba(243,156,18,0.15); color: var(--amber); }
+
+  /* Breakdown */
+  .breakdown-list { display: flex; flex-direction: column; gap: 11px; }
+  .breakdown-item { display: flex; flex-direction: column; gap: 5px; }
+  .breakdown-meta { display: flex; justify-content: space-between; align-items: center; }
+  .breakdown-name { font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .breakdown-count { font-size: 11px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+  .breakdown-track { height: 5px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+  .breakdown-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+  /* Skills */
+  .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .skill-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 9px 11px; }
+  .skill-name { font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+  .skill-track { height: 3px; background: var(--surface3); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+  .skill-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+  .skill-meta { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+
+  /* Alerts */
+  .alert-list { display: flex; flex-direction: column; gap: 7px; }
+  .alert-item { display: flex; align-items: center; gap: 11px; padding: 9px 11px; background: var(--surface2); border-radius: 5px; border: 1px solid var(--border); font-size: 12px; }
+  .alert-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+  .alert-body { flex: 1; }
+  .alert-title { font-weight: 500; margin-bottom: 2px; }
+  .alert-sub { font-size: 11px; color: var(--text-dim); }
+  .alert-days { font-family: 'DM Mono', monospace; font-size: 11px; white-space: nowrap; }
+
+  /* Union */
+  .union-list { display: flex; flex-direction: column; gap: 7px; }
+  .union-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; background: var(--surface2); border-radius: 5px; border: 1px solid var(--border); }
+  .union-name { font-size: 12px; font-weight: 500; }
+  .union-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .union-status { display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: 'DM Mono', monospace; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* Chart containers */
+  .chart-container { position: relative; height: 160px; margin-top: 8px; }
+
+  /* Colors */
+  .c-red { color: var(--red); }
+  .c-green { color: var(--green); }
+  .c-amber { color: var(--amber); }
+  .c-blue { color: var(--blue); }
+  .c-purple { color: var(--purple); }
+  .bg-red { background: var(--red); }
+  .bg-green { background: var(--green); }
+  .bg-amber { background: var(--amber); }
+  .bg-blue { background: var(--blue); }
+  .bg-purple { background: var(--purple); }
+  .dot-corporate { background: var(--blue); }
+  .dot-studio { background: #ff6b6b; }
+  .dot-union { background: var(--purple); }
+  .dot-freelance { background: var(--amber); }
+
+  /* Side Panel */
+  .side-panel-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 500; display: none; animation: overlayIn 0.2s ease;
+  }
+  .side-panel-overlay.visible { display: block; }
+  .side-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 480px;
+    background: var(--surface); border-left: 1px solid var(--border);
+    z-index: 501; overflow-y: auto;
+    animation: slideIn 0.3s ease;
+    display: none;
+  }
+  .side-panel.visible { display: block; }
+  .side-panel-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between;
+    position: sticky; top: 0; background: var(--surface); z-index: 10;
+  }
+  .side-panel-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 20px; line-height: 1; padding: 0; transition: color 0.15s; }
+  .side-panel-close:hover { color: var(--text); }
+  .side-panel-body { padding: 20px 24px; }
+
+  .sp-section { margin-bottom: 22px; }
+  .sp-section-title { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); font-family: 'DM Mono', monospace; margin-bottom: 12px; font-weight: 600; }
+
+  .sp-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .sp-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; }
+  .sp-stat-label { font-size: 10px; color: var(--text-muted); font-family: 'DM Mono', monospace; margin-bottom: 6px; letter-spacing: 0.06em; }
+  .sp-stat-value { font-family: 'DM Serif Display', serif; font-size: 22px; }
+
+  .risk-factor-list { display: flex; flex-direction: column; gap: 8px; }
+  .risk-factor { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--surface2); border-radius: 5px; border: 1px solid var(--border); font-size: 12px; }
+  .risk-factor-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .risk-factor-text { flex: 1; }
+  .risk-factor-impact { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-dim); }
+
+  .opportunity-list { display: flex; flex-direction: column; gap: 8px; }
+  .opportunity-item { padding: 12px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: border-color 0.15s; }
+  .opportunity-item:hover { border-color: var(--red); }
+  .opp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .opp-title { font-size: 12px; font-weight: 600; }
+  .opp-type { font-size: 10px; font-family: 'DM Mono', monospace; padding: 2px 7px; border-radius: 3px; }
+  .opp-type.internal { background: rgba(52,152,219,0.15); color: var(--blue); }
+  .opp-type.external { background: rgba(46,204,113,0.15); color: var(--green); }
+  .opp-type.learning { background: rgba(243,156,18,0.15); color: var(--amber); }
+  .opp-desc { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+
+  .action-row { display: flex; gap: 8px; margin-top: 16px; }
+  .action-btn { flex: 1; padding: 10px; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface3); color: var(--text); transition: all 0.15s; text-align: center; }
+  .action-btn:hover { border-color: var(--red); color: var(--red); }
+  .action-btn.primary { background: var(--red); border-color: var(--red); color: white; }
+  .action-btn.primary:hover { background: #c0070f; }
+
+  /* Segment side panel */
+  .seg-panel-header-meta { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+
+  /* Chart toggle */
+  .chart-toggle-btn {
+    padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text-muted); transition: all 0.15s; font-family: 'DM Mono', monospace;
+    letter-spacing: 0.03em;
+  }
+  .chart-toggle-btn:hover { color: var(--text); border-color: var(--text-muted); }
+  .chart-toggle-btn.active { background: var(--red); border-color: var(--red); color: white; }
+
+  .page-view { flex: 1; }
+
+  /* Risk page specific */
+  .rr-filter-bar { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; align-items:center; }
+  .rr-filter-select { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:6px 12px; font-size:12px; color:var(--text); font-family:'DM Sans',sans-serif; outline:none; cursor:pointer; transition:border-color 0.15s; }
+  .rr-filter-select:focus { border-color:var(--red); }
+  .rr-filter-label { font-size:11px; color:var(--text-muted); font-family:'DM Mono',monospace; letter-spacing:0.06em; }
+  .rr-search { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:6px 12px; font-size:12px; color:var(--text); font-family:'DM Sans',sans-serif; outline:none; width:200px; transition:border-color 0.15s; }
+  .rr-search:focus { border-color:var(--red); }
+  .rr-search::placeholder { color:var(--text-muted); }
+
+  .full-risk-table { width:100%; border-collapse:collapse; }
+  .full-risk-table th { text-align:left; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); padding:0 0 10px; border-bottom:1px solid var(--border); font-weight:500; font-family:'DM Mono',monospace; cursor:pointer; user-select:none; }
+  .full-risk-table th:hover { color:var(--text); }
+  .full-risk-table th .sort-icon { margin-left:4px; opacity:0.4; }
+  .full-risk-table th.sorted .sort-icon { opacity:1; color:var(--red); }
+  .full-risk-table td { padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; }
+  .full-risk-table tr:last-child td { border-bottom:none; }
+  .full-risk-table th:not(:first-child), .full-risk-table td:not(:first-child) { padding-left:14px; }
+  .full-risk-table tbody tr { cursor:pointer; transition:background 0.12s; }
+  .full-risk-table tbody tr:hover td { background:var(--surface2); }
+  .full-risk-table tbody tr:hover .emp-name { color:var(--red); }
+  .emp-name { font-weight:500; transition:color 0.12s; }
+  .emp-role { color:var(--text-dim); font-size:11px; margin-top:1px; }
+
+  .intervention-status { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:3px; font-size:10px; font-weight:600; font-family:'DM Mono',monospace; }
+  .status-actioned { background:rgba(46,204,113,0.15); color:var(--green); }
+  .status-pending { background:rgba(243,156,18,0.15); color:var(--amber); }
+  .status-none { background:rgba(85,85,85,0.2); color:var(--text-muted); }
+  .status-escalated { background:rgba(229,9,20,0.15); color:var(--red); }
+
+  .risk-factor-tag { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10px; background:var(--surface3); border:1px solid var(--border); color:var(--text-dim); margin:1px; font-family:'DM Mono',monospace; }
+
+  .driver-card { background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
+  .driver-rank { font-family:'DM Serif Display',serif; font-size:28px; color:var(--red); opacity:0.4; line-height:1; margin-bottom:6px; }
+  .driver-name { font-size:13px; font-weight:600; margin-bottom:4px; }
+  .driver-desc { font-size:11px; color:var(--text-dim); line-height:1.6; margin-bottom:10px; }
+  .driver-bar-wrap { height:4px; background:var(--surface3); border-radius:2px; overflow:hidden; margin-bottom:4px; }
+  .driver-bar-fill { height:100%; border-radius:2px; background:var(--red); }
+  .driver-impact { font-size:10px; color:var(--text-muted); font-family:'DM Mono',monospace; }
+
+  .cohort-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .cohort-row:last-child { border-bottom:none; }
+  .cohort-label { font-size:12px; font-weight:500; width:100px; flex-shrink:0; }
+  .cohort-track { flex:1; height:8px; background:var(--surface3); border-radius:4px; overflow:hidden; }
+  .cohort-fill { height:100%; border-radius:4px; transition:width 0.5s ease; }
+  .cohort-pct { font-size:11px; font-family:'DM Mono',monospace; width:38px; text-align:right; flex-shrink:0; }
+  .cohort-count { font-size:11px; color:var(--text-muted); width:70px; flex-shrink:0; }
+
+  /* Segment health scorecard */
+  .scorecard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .scorecard-cell { background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .scorecard-cell-label { font-size: 10px; color: var(--text-muted); font-family: 'DM Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+  .scorecard-cell-value { font-size: 15px; font-weight: 600; font-family: 'DM Serif Display', serif; line-height: 1.2; }
+  .scorecard-cell-sub { font-size: 10px; color: var(--text-dim); }
+  .scorecard-signal { display: flex; align-items: center; gap: 5px; font-size: 10px; font-family: 'DM Mono', monospace; }
+  .scorecard-signal-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Intelligence Agent Page ── */
+  .agent-hero {
+    background: linear-gradient(135deg, #111 0%, #1a0a0a 50%, #111 100%);
+    border: 1px solid #2a0a0a;
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .agent-hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(229,9,20,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .agent-hero-label {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--red); font-family: 'DM Mono', monospace; font-weight: 600;
+    margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .agent-pulse {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--red);
+    animation: agentPulse 2s infinite;
+  }
+  @keyframes agentPulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(229,9,20,0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(229,9,20,0); }
+  }
+  .agent-hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px; line-height: 1.2; margin-bottom: 6px;
+  }
+  .agent-hero-sub { font-size: 13px; color: var(--text-dim); line-height: 1.6; max-width: 600px; }
+  .agent-meta { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+  .agent-meta-item {
+    font-size: 11px; color: var(--text-muted); font-family: 'DM Mono', monospace;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .agent-meta-item span { color: var(--text-dim); }
+
+  .agent-mode-tabs {
+    display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px;
+  }
+  .agent-mode-tab {
+    padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid transparent; background: transparent;
+    color: var(--text-muted); transition: all 0.18s; display: flex; align-items: center;
+    gap: 8px; flex: 1; justify-content: center; min-width: 140px;
+    font-family: 'DM Sans', sans-serif; letter-spacing: 0.01em;
+  }
+  .agent-mode-tab:hover { background: var(--surface2); color: var(--text); border-color: var(--border); }
+  .agent-mode-tab.active {
+    background: var(--surface2); border-color: var(--border);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .agent-mode-tab.active .agent-tab-label { color: var(--text); }
+  .agent-mode-tab.active .agent-tab-badge {
+    background: var(--red); color: white; border-color: var(--red);
+  }
+  .agent-tab-label { font-size: 12px; font-weight: 600; }
+  .agent-tab-badge {
+    font-size: 9px; font-family: 'DM Mono', monospace; letter-spacing: 0.08em;
+    padding: 2px 7px; border-radius: 3px; border: 1px solid var(--border);
+    background: var(--surface3); color: var(--text-muted); font-weight: 600;
+    text-transform: uppercase; transition: all 0.18s; white-space: nowrap;
+  }
+  .agent-mode-icon { font-size: 15px; opacity: 0.7; }
+
+  .agent-output {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .agent-output.visible { display: block; }
+
+  .agent-loading-screen {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 40px; text-align: center; margin-bottom: 16px;
+  }
+  .agent-loading-steps { display: flex; flex-direction: column; gap: 10px; max-width: 340px; margin: 20px auto 0; }
+  .agent-step {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-muted); font-family: 'DM Mono', monospace;
+    transition: color 0.3s;
+  }
+  .agent-step.done { color: var(--green); }
+  .agent-step.active { color: var(--text); }
+  .agent-step-icon { font-size: 13px; width: 18px; text-align: center; flex-shrink: 0; }
+
+  .insight-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 14px; overflow: hidden; transition: border-color 0.2s;
+  }
+  .insight-card:hover { border-color: var(--text-muted); }
+  .insight-card-header {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none;
+  }
+  .insight-card-header-left { display: flex; align-items: center; gap: 12px; }
+  .insight-priority {
+    width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 10px; font-weight: 700; font-family: 'DM Mono', monospace;
+    flex-shrink: 0;
+  }
+  .priority-critical { background: rgba(229,9,20,0.2); color: var(--red); border: 1px solid rgba(229,9,20,0.3); }
+  .priority-high { background: rgba(243,156,18,0.2); color: var(--amber); border: 1px solid rgba(243,156,18,0.3); }
+  .priority-medium { background: rgba(52,152,219,0.2); color: var(--blue); border: 1px solid rgba(52,152,219,0.3); }
+  .insight-card-title { font-size: 13px; font-weight: 600; }
+  .insight-card-badge {
+    font-size: 10px; padding: 2px 8px; border-radius: 3px;
+    font-family: 'DM Mono', monospace; font-weight: 600; letter-spacing: 0.04em;
+  }
+  .badge-critical { background: rgba(229,9,20,0.15); color: var(--red); }
+  .badge-high { background: rgba(243,156,18,0.15); color: var(--amber); }
+  .badge-medium { background: rgba(52,152,219,0.15); color: var(--blue); }
+  .badge-opportunity { background: rgba(46,204,113,0.15); color: var(--green); }
+  .insight-chevron { color: var(--text-muted); font-size: 12px; transition: transform 0.2s; }
+  .insight-chevron.open { transform: rotate(180deg); }
+
+  .insight-card-body { padding: 0 20px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s; }
+  .insight-card-body.open { max-height: 800px; padding: 16px 20px; }
+
+  .insight-finding {
+    font-size: 13px; line-height: 1.75; color: var(--text); margin-bottom: 16px;
+    padding-left: 12px; border-left: 2px solid var(--border);
+  }
+  .insight-actions { display: flex; flex-direction: column; gap: 8px; }
+  .insight-action-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 5px; font-size: 12px; line-height: 1.5;
+  }
+  .insight-action-num {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--surface3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-dim);
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .insight-action-text { flex: 1; }
+  .insight-action-owner {
+    font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-muted);
+    margin-top: 3px;
+  }
+  .insight-action-due {
+    font-size: 10px; font-family: 'DM Mono', monospace; padding: 2px 7px;
+    border-radius: 3px; background: var(--surface3); color: var(--text-muted);
+    white-space: nowrap; align-self: flex-start; margin-top: 1px;
+  }
+
+  .agent-refresh-btn {
+    background: none; border: 1px solid var(--border); border-radius: 5px;
+    padding: 6px 14px; font-size: 11px; color: var(--text-dim); cursor: pointer;
+    font-family: 'DM Mono', monospace; transition: all 0.15s;
+  }
+  .agent-refresh-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .pattern-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pattern-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px;
+  }
+  .pattern-card-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); font-family: 'DM Mono', monospace; margin-bottom: 6px; }
+  .pattern-card-finding { font-size: 12px; line-height: 1.65; color: var(--text); }
+  .pattern-card-signal { font-size: 11px; margin-top: 8px; font-family: 'DM Mono', monospace; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--black); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-n">N</div>
+      <div style="display:flex;flex-direction:column;gap:1px"><div style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--text);letter-spacing:0.01em;line-height:1">Ensemble</div><div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);font-family:'DM Mono',monospace">by Netflix</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')"><span class="nav-icon">◈</span> Workforce Dashboard</div>
+      <div class="nav-item" id="nav-risk" onclick="showPage('risk')"><span class="nav-icon">◎</span> Risk & Retention</div>
+      <div class="nav-item" id="nav-agent" onclick="showPage('agent')"><span class="nav-icon" style="color:var(--red)">⬡</span> <span style="background:linear-gradient(90deg,#E50914,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600">Intelligence Agent</span></div>
+      <div class="nav-section" style="margin-top:6px">Segments</div>
+      <div class="nav-item" id="nav-seg-all" onclick="showPage('dashboard');closePanel();renderAll('all')"><span class="nav-icon" style="color:var(--red)">●</span> All Segments</div>
+      <div class="nav-item" onclick="activateSegment('corporate')"><span class="nav-icon" style="color:var(--blue)">●</span> Corporate</div>
+      <div class="nav-item" onclick="activateSegment('studio')"><span class="nav-icon" style="color:#ff6b6b">●</span> Studio & Content</div>
+      <div class="nav-item" onclick="activateSegment('union')"><span class="nav-icon" style="color:var(--purple)">●</span> Union Crews</div>
+      <div class="nav-item" onclick="activateSegment('freelance')"><span class="nav-icon" style="color:var(--amber)">●</span> Freelance & Project</div>
+      <div class="nav-section" style="margin-top:6px">Programs</div>
+      <div class="nav-item" id="nav-perf" onclick="showPage('perf')"><span class="nav-icon">△</span> Performance & Feedback</div>
+      <div class="nav-item" id="nav-skills" onclick="showPage('skills')"><span class="nav-icon">◇</span> Skills & Development</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="avatar">SQ</div>
+        <div>
+          <div style="font-size:12px;color:var(--text);font-weight:500">Shehnoor Qureshi</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:1px">People Analytics Lead</div>
+        </div>
+      </div>
+      <div style="font-size:9px;color:var(--text-muted);margin-top:10px;line-height:1.5;opacity:0.6">© 2026 Shehnoor Qureshi. All rights reserved.</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-page-title">Workforce Dashboard</div>
+      <div class="topbar-right">
+        <span class="badge-pill">Q1 2026</span>
+        <span class="badge-pill live">Live Data</span>
+        <span class="badge-pill" id="headcount-badge">12,847 employees</span>
+        <span class="badge-pill" id="sync-badge" style="color:var(--text-muted);border-color:var(--border)">Synced today at 6:14 AM</span>
+      </div>
+    </div>
+
+    <div id="page-dashboard" class="page-view">
+    <div class="content">
+
+      <!-- AI Bar -->
+      <div class="ai-bar">
+        <div class="ai-bar-label">AI Query</div>
+        <input class="ai-input" id="aiInput" placeholder="e.g. Which studio roles are at risk ahead of the Q2 international slate ramp?" />
+        <button class="ai-btn" id="aiBtn" onclick="runQuery()">Ask →</button>
+      </div>
+
+      <div class="query-chips">
+        <div class="query-chip" onclick="setQuery('Which studio roles are at highest flight risk ahead of the Q2 international slate ramp?')">Flight risk — Q2 slate ramp</div>
+        <div class="query-chip" onclick="setQuery('What skills gaps exist in post-production for the next slate?')">Skills gaps — next slate</div>
+        <div class="query-chip" onclick="setQuery('Which union contracts are expiring in the next 90 days and what are the risks?')">Union contracts expiring</div>
+        <div class="query-chip" onclick="setQuery('How does freelance headcount compare to the same period last year?')">Freelance headcount YoY</div>
+        <div class="query-chip" onclick="setQuery('What development opportunities should we offer to retain corporate PMs at the 2-year mark?')">Corporate PM retention</div>
+      </div>
+
+      <div class="ai-response" id="aiResponse">
+        <div class="ai-response-header">AI Insight</div>
+        <div id="aiResponseText"></div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-card green">
+          <div class="kpi-label">Total Headcount</div>
+          <div class="kpi-value" id="kpi-headcount">12,847</div>
+          <div class="kpi-sub" id="kpi-headcount-sub">Across all segments <span class="kpi-delta up">+3.2%</span></div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">Flight Risk (30-day)</div>
+          <div class="kpi-value" id="kpi-risk">284</div>
+          <div class="kpi-sub" id="kpi-risk-sub">Flagged by model <span class="kpi-delta down">+18</span></div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">L&amp;D Participation</div>
+          <div class="kpi-value" id="kpi-contracts">61%</div>
+          <div class="kpi-sub" id="kpi-contracts-sub">Active in program <span class="kpi-delta up">+4pts</span></div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-label">Open Reqs (Critical)</div>
+          <div class="kpi-value" id="kpi-reqs">43</div>
+          <div class="kpi-sub" id="kpi-reqs-sub">Blocking production <span class="kpi-delta up">−5</span></div>
+        </div>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="grid-2">
+        <!-- Breakdown + chart -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Workforce Segments</div>
+            <div class="panel-action" onclick="showSegmentPanel('all')">View all →</div>
+          </div>
+          <div class="panel-body">
+            <div class="breakdown-list" id="breakdown-list"></div>
+            <div id="segment-scorecard" style="margin-top:16px"></div>
+          </div>
+        </div>
+
+        <!-- Flight Risk Table -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Flight Risk — Top Signals</div>
+            <div class="panel-action">Full report →</div>
+          </div>
+          <div class="panel-body" style="padding:0 18px">
+            <table class="risk-table">
+              <thead>
+                <tr>
+                  <th>Name / Role</th>
+                  <th>Segment</th>
+                  <th>Risk</th>
+                  <th>Primary Signal</th>
+                </tr>
+              </thead>
+              <tbody id="risk-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3 -->
+      <!-- Skills panel full width -->
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-header">
+          <div class="panel-title">Skills Gaps — Next Slate</div>
+          <div class="panel-action">Full view →</div>
+        </div>
+        <div class="panel-body">
+          <div class="skills-grid" id="skills-grid" style="grid-template-columns:repeat(6,1fr)"></div>
+        </div>
+      </div>
+
+      <!-- Toggled Analytics Chart -->
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-header">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <div class="panel-title" id="chart-panel-title">Attrition Count by Segment — Last 6 Quarters</div>
+            <div style="display:flex;gap:4px">
+              <div class="chart-toggle-btn active" id="toggle-attrition" onclick="switchChart('attrition')">Attrition</div>
+              <div class="chart-toggle-btn" id="toggle-flightrisk" onclick="switchChart('flightrisk')">Flight Risk</div>
+              <div class="chart-toggle-btn" id="toggle-timetofill" onclick="switchChart('timetofill')">Time-to-Fill</div>
+            </div>
+          </div>
+          <div class="panel-action">Export →</div>
+        </div>
+        <div class="panel-body">
+          <div class="chart-container" style="height:200px">
+            <canvas id="analyticsChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    </div><!-- end page-dashboard -->
+    <div id="page-agent" class="page-view" style="display:none">
+    <div class="content" id="agent-content"></div>
+    </div>
+
+    <!-- Risk & Retention Page -->
+    <div id="page-risk" class="page-view" style="display:none">
+    <div class="content" id="risk-content"></div>
+    </div>
+    <div id="page-perf" class="page-view" style="display:none">
+    <div class="content" id="perf-content"></div>
+    </div>
+    <div id="page-skills" class="page-view" style="display:none">
+    <div class="content" id="skills-content"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Side Panel Overlay -->
+<div class="side-panel-overlay" id="overlay" onclick="closePanel()"></div>
+
+<!-- Side Panel -->
+<div class="side-panel" id="sidePanel">
+  <div class="side-panel-header">
+    <div>
+      <div id="sp-title" style="font-family:'DM Serif Display',serif;font-size:20px"></div>
+      <div id="sp-subtitle" style="font-size:12px;color:var(--text-dim);margin-top:4px"></div>
+      <div class="seg-panel-header-meta" id="sp-chips"></div>
+    </div>
+    <button class="side-panel-close" onclick="closePanel()">×</button>
+  </div>
+  <div class="side-panel-body" id="sp-body"></div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+
+const SEGMENTS = {
+  all: {
+    label: 'All Segments',
+    headcount: 12847, risk: 284, contracts: '61%', reqs: 43,
+    headcountSub: 'Across all segments',
+    riskSub: 'Flagged by model',
+    contractsSub: 'Active in program',
+    reqsSub: 'Blocking production',
+    headcountStatus: 'green', riskStatus: 'amber', contractsStatus: 'amber', reqsStatus: 'amber',
+  },
+  corporate: {
+    label: 'Corporate (Full-time)',
+    color: '#3498DB',
+    headcount: 4210, risk: 94, contracts: '74%', reqs: 8,
+    headcountSub: 'Corporate FTEs',
+    riskSub: 'Flagged — corp segment',
+    contractsSub: 'Active in program',
+    reqsSub: 'Critical corp reqs',
+    headcountStatus: 'green', riskStatus: 'amber', contractsStatus: 'green', reqsStatus: 'green',
+    description: 'Full-time corporate employees across tech, product, finance, marketing, and people operations.',
+    reviewCadence: 'Annual + quarterly pulse',
+    compStructure: 'Salary + equity + bonus',
+    notes: null,
+  },
+  studio: {
+    label: 'Studio & Content (FTE)',
+    color: '#ff6b6b',
+    headcount: 3890, risk: 112, contracts: '52%', reqs: 21,
+    headcountSub: 'Studio FTEs',
+    riskSub: 'Flagged — studio segment',
+    contractsSub: 'Active in program',
+    reqsSub: 'Production-blocking reqs',
+    headcountStatus: 'green', riskStatus: 'red', contractsStatus: 'red', reqsStatus: 'red',
+    description: 'Full-time studio and content employees in development, production, post-production, and creative roles.',
+    reviewCadence: 'Project-based + biannual',
+    compStructure: 'Salary + project bonus',
+    notes: null,
+  },
+  union: {
+    label: 'Union Crew (SAG/IATSE/WGA)',
+    color: '#9B59B6',
+    headcount: 2640, risk: 42, contracts: '41%', reqs: 10,
+    headcountSub: 'Union crew members',
+    riskSub: 'Flagged — union segment',
+    contractsSub: 'Active in program',
+    reqsSub: 'Open crew reqs',
+    headcountStatus: 'green', riskStatus: 'green', contractsStatus: 'red', reqsStatus: 'amber',
+    description: 'Unionized crew members governed by collective bargaining agreements. Includes SAG-AFTRA, IATSE, WGA, and DGA members across scripted, unscripted, and documentary productions.',
+    reviewCadence: 'CBA-governed only ⚠',
+    compStructure: 'Scale rates + residuals',
+    notes: '⚠ CBA constraints restrict feedback, scheduling, and comp changes during renegotiation windows.',
+  },
+  freelance: {
+    label: 'Freelance & Project-based',
+    color: '#F39C12',
+    headcount: 2107, risk: 36, contracts: '38%', reqs: 4,
+    headcountSub: 'Active freelancers',
+    riskSub: 'Non-return risk',
+    contractsSub: 'Active in program',
+    reqsSub: 'Open freelance reqs',
+    headcountStatus: 'green', riskStatus: 'green', contractsStatus: 'red', reqsStatus: 'green',
+    description: 'Project-based and freelance workers engaged on a per-production or fixed-term basis. Includes DPs, editors, composers, and specialist crew.',
+    reviewCadence: 'End-of-engagement survey',
+    compStructure: 'Day rate / project fee',
+    notes: null,
+  },
+};
+
+const ALL_EMPLOYEES = [
+  { name: 'Jordan Kim', role: 'Sr. Post-Production Sup.', segment: 'studio', risk: 87, signal: 'No L&D activity 9mo', tenure: '3.5 yrs', comp: '$142K (−11% vs band)', lastReview: '14 months ago', engagement: 'Low', location: 'Los Angeles' },
+  { name: 'Marcus Webb', role: 'Lead VFX Artist', segment: 'studio', risk: 79, signal: 'Comp below band midpoint', tenure: '2.1 yrs', comp: '$128K (−14% vs band)', lastReview: '8 months ago', engagement: 'Low', location: 'Vancouver' },
+  { name: 'Priya Nair', role: 'Product Manager II', segment: 'corporate', risk: 64, signal: '2 internal apps, no move', tenure: '2.8 yrs', comp: '$185K (on band)', lastReview: '6 months ago', engagement: 'Medium', location: 'Los Gatos' },
+  { name: 'Lena Torres', role: 'DP / Cinematographer', segment: 'freelance', risk: 58, signal: 'Contract gap 6+ weeks', tenure: '1.2 yrs', comp: '$1,800/day', lastReview: 'End-of-engagement', engagement: 'Medium', location: 'New York' },
+  { name: 'Dev Sharma', role: 'ML Engineer, Recs', segment: 'corporate', risk: 52, signal: 'LinkedIn activity spike', tenure: '1.9 yrs', comp: '$230K (on band)', lastReview: '5 months ago', engagement: 'Medium', location: 'Los Gatos' },
+  { name: 'Amara Osei', role: 'Showrunner', segment: 'studio', risk: 48, signal: 'No internal mobility pitch', tenure: '4.2 yrs', comp: '$310K (on band)', lastReview: '11 months ago', engagement: 'Medium', location: 'New York' },
+  { name: 'Kenji Watanabe', role: 'IATSE Gaffer', segment: 'union', risk: 44, signal: 'CBA rate dispute open', tenure: '2.0 yrs', comp: 'Scale rate', lastReview: 'CBA-governed', engagement: 'Low', location: 'Los Angeles' },
+  { name: 'Sofia Reyes', role: 'Sr. Data Scientist', segment: 'corporate', risk: 38, signal: 'Team reorg impact', tenure: '3.1 yrs', comp: '$210K (on band)', lastReview: '4 months ago', engagement: 'Medium', location: 'Los Gatos' },
+];
+
+const OPPORTUNITIES = {
+  studio: [
+    { title: 'Executive Producer Track', type: 'internal', desc: 'Internal pathway for senior production supervisors to EP roles. 6-month cohort program. Next start: Q3 2025.' },
+    { title: 'Virtual Production Certification', type: 'learning', desc: 'Partnership with ARRI and Epic Games. 8-week intensive on LED volumes and Unreal Engine 5 for studio FTEs.' },
+    { title: 'Cross-Vertical Rotation', type: 'internal', desc: 'Rotate into an adjacent content vertical (e.g., Documentary → Scripted) for 6 months. Open to senior ICs.' },
+    { title: 'MasterClass for Business', type: 'external', desc: 'Curated creative leadership content. Available to all studio FTEs via L&D budget allocation.' },
+  ],
+  corporate: [
+    { title: 'Senior PM → Staff PM Track', type: 'internal', desc: 'Structured IC growth path with sponsorship from a VP. Includes cross-functional project lead opportunity.' },
+    { title: 'AI/ML Product Immersion', type: 'learning', desc: '10-week program embedding corporate PMs in ML teams. Covers model evaluation, product-led AI, and inference tradeoffs.' },
+    { title: 'Harvard Business Online — Strategy', type: 'external', desc: 'Subsidized via L&D. Particularly relevant for PMs at the 2–4 year tenure band exploring leadership tracks.' },
+    { title: 'Internal Transfer — Content Strategy', type: 'internal', desc: 'Open role in Content Strategy org for product-minded candidates. Apply via internal job board.' },
+  ],
+  union: [
+    { title: 'CBA Literacy Workshop', type: 'learning', desc: 'For crew members and managers. Covers rights, grievance procedures, and negotiation timelines. Led by Labor Relations.' },
+    { title: 'Scale-to-Staff Pathway', type: 'internal', desc: 'Pathway for high-performing union crew to transition into staff studio roles where CBA permits. 12-month process.' },
+    { title: 'IATSE Training Trust Programs', type: 'external', desc: 'Union-sponsored technical training in grip, lighting, and camera. Netflix covers co-pay for eligible crew.' },
+  ],
+  freelance: [
+    { title: 'Preferred Vendor Program', type: 'internal', desc: 'Top freelancers gain preferred status: priority booking, rate guarantees, and early access to upcoming productions.' },
+    { title: 'Netflix Creator Fund', type: 'external', desc: 'Grant program for independent directors and DPs developing original projects. Applications open Q3.' },
+    { title: 'Staff DP Conversion Review', type: 'internal', desc: 'Freelancers with 3+ Netflix engagements are eligible for staff role review. HR can initiate the process.' },
+  ],
+};
+
+const SKILLS_DATA = {
+  all: [
+    { name: 'AI/ML Production', gap: 72, color: 'var(--red)' },
+    { name: 'Virtual Production', gap: 58, color: 'var(--amber)' },
+    { name: 'Unreal Engine 5', gap: 81, color: 'var(--red)' },
+    { name: 'Localization QA', gap: 44, color: 'var(--amber)' },
+    { name: 'Data Storytelling', gap: 31, color: 'var(--green)' },
+    { name: 'SAG Compliance', gap: 50, color: 'var(--amber)' },
+  ],
+  corporate: [
+    { name: 'AI/ML Product Mgmt', gap: 68, color: 'var(--red)' },
+    { name: 'Data Architecture', gap: 55, color: 'var(--amber)' },
+    { name: 'Executive Presence', gap: 38, color: 'var(--amber)' },
+    { name: 'Python / SQL', gap: 42, color: 'var(--amber)' },
+    { name: 'OKR Facilitation', gap: 28, color: 'var(--green)' },
+    { name: 'Stakeholder Mgmt', gap: 22, color: 'var(--green)' },
+  ],
+  studio: [
+    { name: 'Unreal Engine 5', gap: 81, color: 'var(--red)' },
+    { name: 'AI/ML Production', gap: 72, color: 'var(--red)' },
+    { name: 'Virtual Production', gap: 58, color: 'var(--amber)' },
+    { name: 'Post-Production AI', gap: 65, color: 'var(--red)' },
+    { name: 'Localization QA', gap: 44, color: 'var(--amber)' },
+    { name: 'Accessibility (ADA)', gap: 36, color: 'var(--amber)' },
+  ],
+  union: [
+    { name: 'SAG Compliance', gap: 50, color: 'var(--amber)' },
+    { name: 'CBA Literacy', gap: 45, color: 'var(--amber)' },
+    { name: 'LED Volume Op.', gap: 70, color: 'var(--red)' },
+    { name: 'Digital Workflows', gap: 55, color: 'var(--amber)' },
+    { name: 'Safety Protocols', gap: 20, color: 'var(--green)' },
+    { name: 'Remote Production', gap: 38, color: 'var(--amber)' },
+  ],
+  freelance: [
+    { name: 'Virtual Production', gap: 60, color: 'var(--red)' },
+    { name: 'Netflix Brand Guide', gap: 35, color: 'var(--amber)' },
+    { name: 'Remote Collab Tools', gap: 28, color: 'var(--green)' },
+    { name: 'Unreal Engine 5', gap: 75, color: 'var(--red)' },
+    { name: 'Budget Reporting', gap: 42, color: 'var(--amber)' },
+    { name: 'Accessibility (ADA)', gap: 50, color: 'var(--amber)' },
+  ],
+};
+
+const CONTRACTS_DATA = {
+  all: [
+    { icon: '🎬', title: 'Writers Guild Block', sub: '14 WGA writers · Drama slate', days: 12, color: 'var(--red)' },
+    { icon: '🎭', title: 'SAG Talent Pool', sub: '8 recurring roles · Reality', days: 31, color: 'var(--amber)' },
+    { icon: '⚙️', title: 'IATSE Crew Renewal', sub: '22 crew · 3 productions', days: 45, color: 'var(--amber)' },
+    { icon: '📋', title: 'Corporate Fixed-term', sub: '5 roles · Data & Insights', days: 78, color: 'var(--green)' },
+  ],
+  corporate: [
+    { icon: '📋', title: 'Fixed-term Engineers', sub: '3 roles · Platform team', days: 45, color: 'var(--amber)' },
+    { icon: '📋', title: 'Data & Insights', sub: '2 roles · Analytics', days: 78, color: 'var(--green)' },
+  ],
+  studio: [
+    { icon: '🎬', title: 'Writers Guild Block', sub: '14 WGA writers · Drama slate', days: 12, color: 'var(--red)' },
+    { icon: '🎭', title: 'SAG Talent Pool', sub: '8 recurring roles · Reality', days: 31, color: 'var(--amber)' },
+    { icon: '🎥', title: 'Director Agreements', sub: '4 DGA directors', days: 60, color: 'var(--green)' },
+  ],
+  union: [
+    { icon: '🎬', title: 'WGA Drama Block', sub: '14 writers · Urgent', days: 12, color: 'var(--red)' },
+    { icon: '⚙️', title: 'IATSE Local 695', sub: '22 crew · 3 productions', days: 45, color: 'var(--amber)' },
+    { icon: '🎭', title: 'SAG Reality Pool', sub: '8 talent', days: 31, color: 'var(--amber)' },
+  ],
+  freelance: [
+    { icon: '🎥', title: 'DP Engagements', sub: '3 DPs · Renewal pending', days: 21, color: 'var(--amber)' },
+    { icon: '🎵', title: 'Composer Agreements', sub: '2 composers · Docuseries', days: 55, color: 'var(--green)' },
+  ],
+};
+
+const UNION_DATA = [
+  { name: 'SAG-AFTRA', sub: 'Scripted · 1,240 members', status: 'Active', statusColor: 'var(--green)', dotClass: 'bg-green' },
+  { name: 'IATSE Local 695', sub: 'Production Sound · 380 members', status: 'Renegotiating', statusColor: 'var(--amber)', dotClass: 'bg-amber' },
+  { name: 'WGA West', sub: 'Writers · 620 members', status: 'Active', statusColor: 'var(--green)', dotClass: 'bg-green' },
+  { name: 'DGA', sub: 'Directors · 400 members', status: 'Expiring Soon', statusColor: 'var(--red)', dotClass: 'bg-red' },
+];
+
+const BREAKDOWN_DATA = {
+  all: [
+    { name: 'Corporate (Full-time)', count: 4210, pct: 32.8, dotClass: 'dot-corporate', fillColor: 'var(--blue)' },
+    { name: 'Studio & Content (FTE)', count: 3890, pct: 30.3, dotClass: 'dot-studio', fillColor: '#ff6b6b' },
+    { name: 'Union Crew', count: 2640, pct: 20.5, dotClass: 'dot-union', fillColor: 'var(--purple)' },
+    { name: 'Freelance & Project', count: 2107, pct: 16.4, dotClass: 'dot-freelance', fillColor: 'var(--amber)' },
+  ],
+  corporate: [
+    { name: 'Product & Engineering', count: 1820, pct: 43.2, dotClass: 'dot-corporate', fillColor: 'var(--blue)' },
+    { name: 'Finance & Legal', count: 890, pct: 21.1, dotClass: 'dot-corporate', fillColor: '#5dade2' },
+    { name: 'Marketing', count: 760, pct: 18.1, dotClass: 'dot-corporate', fillColor: '#85c1e9' },
+    { name: 'People & Culture', count: 740, pct: 17.6, dotClass: 'dot-corporate', fillColor: '#aed6f1' },
+  ],
+  studio: [
+    { name: 'Scripted Drama & Comedy', count: 1540, pct: 39.6, dotClass: 'dot-studio', fillColor: '#ff6b6b' },
+    { name: 'Post-Production', count: 980, pct: 25.2, dotClass: 'dot-studio', fillColor: '#ff8e8e' },
+    { name: 'Unscripted & Reality', count: 720, pct: 18.5, dotClass: 'dot-studio', fillColor: '#ffb3b3' },
+    { name: 'Animation & Kids', count: 650, pct: 16.7, dotClass: 'dot-studio', fillColor: '#ffd6d6' },
+  ],
+  union: [
+    { name: 'SAG-AFTRA', count: 1240, pct: 47.0, dotClass: 'dot-union', fillColor: 'var(--purple)' },
+    { name: 'WGA West', count: 620, pct: 23.5, dotClass: 'dot-union', fillColor: '#b07ed3' },
+    { name: 'IATSE Local 695', count: 380, pct: 14.4, dotClass: 'dot-union', fillColor: '#c39bd3' },
+    { name: 'DGA', count: 400, pct: 15.1, dotClass: 'dot-union', fillColor: '#d7bde2' },
+  ],
+  freelance: [
+    { name: 'Camera & Lighting', count: 820, pct: 38.9, dotClass: 'dot-freelance', fillColor: 'var(--amber)' },
+    { name: 'Sound & Music', count: 490, pct: 23.3, dotClass: 'dot-freelance', fillColor: '#f5b942' },
+    { name: 'Editing & Post', count: 430, pct: 20.4, dotClass: 'dot-freelance', fillColor: '#f8c968' },
+    { name: 'Writers & Directors', count: 367, pct: 17.4, dotClass: 'dot-freelance', fillColor: '#fad793' },
+  ],
+};
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+
+let currentSegment = 'all';
+let analyticsChart = null;
+let currentChartType = 'attrition';
+let trendChart = null;
+
+function renderAll(seg) {
+  currentSegment = seg;
+  const s = SEGMENTS[seg];
+
+  // KPIs
+  animateValue('kpi-headcount', parseInt(document.getElementById('kpi-headcount').textContent.replace(/,/g,'')), s.headcount, 400);
+  animateValue('kpi-risk', parseInt(document.getElementById('kpi-risk').textContent.replace(/,/g,'')), s.risk, 400);
+  document.getElementById('kpi-contracts').textContent = s.contracts;
+  animateValue('kpi-reqs', parseInt(document.getElementById('kpi-reqs').textContent.replace(/,/g,'')), s.reqs, 400);
+  // Update semantic KPI colors
+  const kpiCards = document.querySelectorAll('.kpi-row:first-of-type .kpi-card');
+  const statuses = [s.headcountStatus, s.riskStatus, s.contractsStatus, s.reqsStatus];
+  kpiCards.forEach((card, i) => {
+    card.className = 'kpi-card ' + (statuses[i] || 'green');
+  });
+
+  document.getElementById('headcount-badge').textContent = s.headcount.toLocaleString() + ' employees';
+
+  // Breakdown
+  const bd = BREAKDOWN_DATA[seg];
+  document.getElementById('breakdown-list').innerHTML = bd.map(b => `
+    <div class="breakdown-item" onclick="showSegmentPanel('${seg}')">
+      <div class="breakdown-meta">
+        <div class="breakdown-name"><div class="seg-dot ${b.dotClass}"></div>${b.name}</div>
+        <div class="breakdown-count">${b.count.toLocaleString()} · ${b.pct}%</div>
+      </div>
+      <div class="breakdown-track"><div class="breakdown-fill" style="width:${b.pct}%;background:${b.fillColor}"></div></div>
+    </div>
+  `).join('');
+
+  // Risk table
+  const employees = seg === 'all' ? ALL_EMPLOYEES : ALL_EMPLOYEES.filter(e => e.segment === seg);
+  const toShow = employees.slice(0, 5);
+  document.getElementById('risk-tbody').innerHTML = toShow.map(e => `
+    <tr class="risk-row" onclick="showEmployeePanel(${JSON.stringify(e).replace(/"/g,'&quot;')})">
+      <td>
+        <div class="name-cell">${e.name}</div>
+        <div class="role-cell">${e.role}</div>
+      </td>
+      <td><span class="segment-chip chip-${e.segment}">${e.segment.charAt(0).toUpperCase() + e.segment.slice(1)}</span></td>
+      <td>
+        <div class="risk-bar-wrap"><div class="risk-bar" style="width:${e.risk}%;background:${e.risk>70?'var(--red)':'var(--amber)'}"></div></div>
+        <div style="font-size:10px;color:${e.risk>70?'var(--red)':'var(--amber)'};font-family:'DM Mono',monospace;margin-top:3px">${e.risk}%</div>
+      </td>
+      <td style="font-size:11px;color:var(--text-dim)">${e.signal}</td>
+    </tr>
+  `).join('');
+
+  if (employees.length === 0) {
+    document.getElementById('risk-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px;font-size:12px">No high-risk employees in this segment</td></tr>';
+  }
+
+  // Skills
+  const skills = SKILLS_DATA[seg];
+  document.getElementById('skills-grid').innerHTML = skills.map(s => `
+    <div class="skill-item">
+      <div class="skill-name">${s.name}</div>
+      <div class="skill-track"><div class="skill-fill" style="width:${s.gap}%;background:${s.color}"></div></div>
+      <div class="skill-meta"><span>Gap</span><span style="color:${s.color}">${s.gap}%</span></div>
+    </div>
+  `).join('');
+
+  updateCharts(seg);
+}
+
+function animateValue(id, start, end, duration) {
+  const el = document.getElementById(id);
+  const startTime = performance.now();
+  const update = (now) => {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const value = Math.round(start + (end - start) * eased);
+    el.textContent = value.toLocaleString();
+    if (progress < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────────────────────
+
+const chartDefaults = {
+  plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1A1A1A', borderColor: '#2A2A2A', borderWidth: 1, titleColor: '#F0F0F0', bodyColor: '#888888', titleFont: { family: 'DM Mono', size: 11 }, bodyFont: { family: 'DM Sans', size: 11 } } },
+  scales: {
+    x: { grid: { color: '#1F1F1F' }, ticks: { color: '#555', font: { family: 'DM Mono', size: 10 } } },
+    y: { grid: { color: '#1F1F1F' }, ticks: { color: '#555', font: { family: 'DM Mono', size: 10 } } }
+  }
+};
+
+// ─── ANALYTICS CHART DATA ────────────────────────────────────────────────────
+
+const QUARTERS = ['Q4 24', 'Q1 25', 'Q2 25', 'Q3 25', 'Q4 25', 'Q1 26'];
+
+// Attrition count — raw numbers, differences feel dramatic
+const ATTRITION_DATA = {
+  all: {
+    type: 'bar',
+    title: 'Attrition Count by Segment — Last 6 Quarters',
+    yLabel: v => v,
+    datasets: [
+      { label: 'Corporate', data: [48, 52, 61, 44, 39, 42], backgroundColor: 'rgba(52,152,219,0.5)', borderColor: '#3498DB', borderWidth: 1, borderRadius: 3 },
+      { label: 'Studio', data: [71, 88, 94, 76, 82, 79], backgroundColor: 'rgba(255,107,107,0.5)', borderColor: '#ff6b6b', borderWidth: 1, borderRadius: 3 },
+      { label: 'Union', data: [12, 9, 14, 11, 8, 10], backgroundColor: 'rgba(155,89,182,0.5)', borderColor: '#9B59B6', borderWidth: 1, borderRadius: 3 },
+      { label: 'Freelance', data: [84, 102, 118, 95, 108, 97], backgroundColor: 'rgba(243,156,18,0.5)', borderColor: '#F39C12', borderWidth: 1, borderRadius: 3 },
+    ]
+  },
+  corporate: { type: 'bar', title: 'Corporate Attrition Count — Last 6 Quarters', yLabel: v => v,
+    datasets: [{ label: 'Corporate', data: [48, 52, 61, 44, 39, 42], backgroundColor: 'rgba(52,152,219,0.5)', borderColor: '#3498DB', borderWidth: 1, borderRadius: 3 }] },
+  studio: { type: 'bar', title: 'Studio Attrition Count — Last 6 Quarters', yLabel: v => v,
+    datasets: [{ label: 'Studio', data: [71, 88, 94, 76, 82, 79], backgroundColor: 'rgba(255,107,107,0.5)', borderColor: '#ff6b6b', borderWidth: 1, borderRadius: 3 }] },
+  union: { type: 'bar', title: 'Union Attrition Count — Last 6 Quarters', yLabel: v => v,
+    datasets: [{ label: 'Union', data: [12, 9, 14, 11, 8, 10], backgroundColor: 'rgba(155,89,182,0.5)', borderColor: '#9B59B6', borderWidth: 1, borderRadius: 3 }] },
+  freelance: { type: 'bar', title: 'Freelance Attrition Count — Last 6 Quarters', yLabel: v => v,
+    datasets: [{ label: 'Freelance', data: [84, 102, 118, 95, 108, 97], backgroundColor: 'rgba(243,156,18,0.5)', borderColor: '#F39C12', borderWidth: 1, borderRadius: 3 }] },
+};
+
+// Flight risk flagged employees over time
+const FLIGHTRISK_DATA = {
+  all: {
+    type: 'line',
+    title: 'Flight Risk Flagged — By Segment Over Time',
+    yLabel: v => v,
+    datasets: [
+      { label: 'Corporate', data: [68, 74, 81, 70, 88, 94], borderColor: '#3498DB', backgroundColor: 'rgba(52,152,219,0.06)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#3498DB' },
+      { label: 'Studio', data: [88, 95, 108, 99, 104, 112], borderColor: '#ff6b6b', backgroundColor: 'rgba(255,107,107,0.06)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#ff6b6b' },
+      { label: 'Union', data: [28, 31, 38, 34, 40, 42], borderColor: '#9B59B6', backgroundColor: 'rgba(155,89,182,0.06)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#9B59B6' },
+      { label: 'Freelance', data: [22, 25, 30, 28, 33, 36], borderColor: '#F39C12', backgroundColor: 'rgba(243,156,18,0.06)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#F39C12' },
+    ]
+  },
+  corporate: { type: 'line', title: 'Corporate Flight Risk Flagged — Last 6 Quarters', yLabel: v => v,
+    datasets: [{ label: 'Corporate', data: [68, 74, 81, 70, 88, 94], borderColor: '#3498DB', backgroundColor: 'rgba(52,152,219,0.08)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#3498DB' }] },
+  studio: { type: 'line', title: 'Studio Flight Risk Flagged — Last 6 Quarters', yLabel: v => v,
+    datasets: [{ label: 'Studio', data: [88, 95, 108, 99, 104, 112], borderColor: '#ff6b6b', backgroundColor: 'rgba(255,107,107,0.08)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#ff6b6b' }] },
+  union: { type: 'line', title: 'Union Flight Risk Flagged — Last 6 Quarters', yLabel: v => v,
+    datasets: [{ label: 'Union', data: [28, 31, 38, 34, 40, 42], borderColor: '#9B59B6', backgroundColor: 'rgba(155,89,182,0.08)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#9B59B6' }] },
+  freelance: { type: 'line', title: 'Freelance Flight Risk Flagged — Last 6 Quarters', yLabel: v => v,
+    datasets: [{ label: 'Freelance', data: [22, 25, 30, 28, 33, 36], borderColor: '#F39C12', backgroundColor: 'rgba(243,156,18,0.08)', tension: 0.4, fill: true, borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#F39C12' }] },
+};
+
+// Time-to-fill in days — horizontal bar makes comparison easy
+const TIMETOFILL_DATA = {
+  all: {
+    type: 'bar',
+    horizontal: true,
+    title: 'Avg. Time-to-Fill Critical Reqs by Segment (Days) — Q1 2026',
+    yLabel: v => v + 'd',
+    datasets: [
+      { label: 'Time to Fill (days)', data: [38, 67, 91, 44],
+        backgroundColor: ['rgba(52,152,219,0.6)', 'rgba(255,107,107,0.6)', 'rgba(155,89,182,0.6)', 'rgba(243,156,18,0.6)'],
+        borderColor: ['#3498DB', '#ff6b6b', '#9B59B6', '#F39C12'],
+        borderWidth: 1, borderRadius: 4 }
+    ],
+    labels: ['Corporate', 'Studio', 'Union Crew', 'Freelance'],
+  },
+  corporate: { type: 'bar', horizontal: true, title: 'Corporate Time-to-Fill by Sub-function (Days)', yLabel: v => v + 'd',
+    labels: ['Product & Eng', 'Finance & Legal', 'Marketing', 'People & Culture'],
+    datasets: [{ label: 'Days', data: [42, 28, 31, 22], backgroundColor: 'rgba(52,152,219,0.6)', borderColor: '#3498DB', borderWidth: 1, borderRadius: 4 }] },
+  studio: { type: 'bar', horizontal: true, title: 'Studio Time-to-Fill by Sub-function (Days)', yLabel: v => v + 'd',
+    labels: ['Scripted', 'Post-Production', 'Unscripted', 'Animation'],
+    datasets: [{ label: 'Days', data: [72, 88, 54, 61], backgroundColor: 'rgba(255,107,107,0.6)', borderColor: '#ff6b6b', borderWidth: 1, borderRadius: 4 }] },
+  union: { type: 'bar', horizontal: true, title: 'Union Crew Time-to-Fill by Guild (Days)', yLabel: v => v + 'd',
+    labels: ['SAG-AFTRA', 'IATSE', 'WGA', 'DGA'],
+    datasets: [{ label: 'Days', data: [104, 88, 78, 95], backgroundColor: 'rgba(155,89,182,0.6)', borderColor: '#9B59B6', borderWidth: 1, borderRadius: 4 }] },
+  freelance: { type: 'bar', horizontal: true, title: 'Freelance Time-to-Fill by Type (Days)', yLabel: v => v + 'd',
+    labels: ['Camera & Lighting', 'Sound & Music', 'Editing & Post', 'Writers & Directors'],
+    datasets: [{ label: 'Days', data: [38, 29, 44, 52], backgroundColor: 'rgba(243,156,18,0.6)', borderColor: '#F39C12', borderWidth: 1, borderRadius: 4 }] },
+};
+
+const CHART_VIEWS = { attrition: ATTRITION_DATA, flightrisk: FLIGHTRISK_DATA, timetofill: TIMETOFILL_DATA };
+
+function switchChart(type) {
+  currentChartType = type;
+  document.querySelectorAll('.chart-toggle-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('toggle-' + type).classList.add('active');
+  renderAnalyticsChart(currentSegment, type);
+}
+
+function renderAnalyticsChart(seg, type) {
+  if (analyticsChart) analyticsChart.destroy();
+  const source = CHART_VIEWS[type][seg] || CHART_VIEWS[type]['all'];
+  document.getElementById('chart-panel-title').textContent = source.title;
+
+  const isHorizontal = source.horizontal || false;
+  const labels = source.labels || QUARTERS;
+  const showLegend = source.datasets.length > 1;
+
+  analyticsChart = new Chart(
+    document.getElementById('analyticsChart').getContext('2d'),
+    {
+      type: isHorizontal ? 'bar' : source.type,
+      data: { labels, datasets: source.datasets },
+      options: {
+        ...chartDefaults,
+        indexAxis: isHorizontal ? 'y' : 'x',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          ...chartDefaults.plugins,
+          legend: { display: showLegend, labels: { color: '#888', font: { family: 'DM Sans', size: 11 }, boxWidth: 12, padding: 16 } }
+        },
+        scales: {
+          x: {
+            ...chartDefaults.scales.x,
+            ticks: isHorizontal
+              ? { ...chartDefaults.scales.x.ticks, callback: source.yLabel }
+              : { ...chartDefaults.scales.x.ticks },
+            title: (!isHorizontal && type !== 'timetofill')
+              ? { display: true, text: 'Quarter', color: '#555555', font: { family: 'DM Mono', size: 10 }, padding: { top: 6 } }
+              : { display: false }
+          },
+          y: {
+            ...chartDefaults.scales.y,
+            ticks: isHorizontal
+              ? { ...chartDefaults.scales.y.ticks }
+              : { ...chartDefaults.scales.y.ticks, callback: source.yLabel },
+            title: (!isHorizontal)
+              ? { display: true, text: type === 'attrition' ? 'Employees Lost' : type === 'flightrisk' ? 'Employees Flagged' : '', color: '#555555', font: { family: 'DM Mono', size: 10 }, padding: { bottom: 6 } }
+              : { display: false }
+          }
+        }
+      }
+    }
+  );
+}
+
+function updateCharts(seg) {
+  // Small headcount trend chart (top panel)
+  if (trendChart) trendChart.destroy();
+  const TREND_DATA = {
+    all: { data: [11200, 11580, 11900, 12100, 12490, 12847], color: '#E50914' },
+    corporate: { data: [3800, 3900, 3980, 4050, 4120, 4210], color: '#3498DB' },
+    studio: { data: [3400, 3520, 3630, 3720, 3810, 3890], color: '#ff6b6b' },
+    union: { data: [2500, 2530, 2560, 2590, 2620, 2640], color: '#9B59B6' },
+    freelance: { data: [1500, 1630, 1730, 1740, 1940, 2107], color: '#F39C12' },
+  };
+  renderSegmentScorecard(seg);
+
+  // Bottom analytics chart — preserve current toggle selection
+  renderAnalyticsChart(seg, currentChartType);
+}
+
+// ─── SEGMENT FILTER ───────────────────────────────────────────────────────────
+
+function filterSegment(seg) {
+  if (seg !== 'all') {
+    showSegmentPanel(seg);
+  } else {
+    closePanel();
+  }
+  renderAll(seg);
+}
+
+function activateSegment(seg) {
+  showSegmentPanel(seg);
+  renderAll(seg);
+}
+
+// ─── SIDE PANELS ─────────────────────────────────────────────────────────────
+
+function showPanel() {
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('sidePanel').classList.add('visible');
+}
+
+function closePanel() {
+  document.getElementById('overlay').classList.remove('visible');
+  document.getElementById('sidePanel').classList.remove('visible');
+}
+
+function showSegmentPanel(seg) {
+  if (seg === 'all') { closePanel(); return; }
+  const s = SEGMENTS[seg];
+  const opps = OPPORTUNITIES[seg] || [];
+
+  document.getElementById('sp-title').textContent = s.label;
+  document.getElementById('sp-subtitle').textContent = s.description;
+  document.getElementById('sp-chips').innerHTML = `
+    <span class="segment-chip chip-${seg}">${seg.toUpperCase()}</span>
+    <span style="font-size:11px;color:var(--text-dim)">${s.headcount.toLocaleString()} members</span>
+  `;
+
+  document.getElementById('sp-body').innerHTML = `
+    <div class="sp-section">
+      <div class="sp-section-title">Segment Overview</div>
+      <div class="sp-stat-row">
+        <div class="sp-stat">
+          <div class="sp-stat-label">Headcount</div>
+          <div class="sp-stat-value">${s.headcount.toLocaleString()}</div>
+        </div>
+        <div class="sp-stat">
+          <div class="sp-stat-label">Flight Risk (30d)</div>
+          <div class="sp-stat-value" style="color:var(--amber)">${s.risk}</div>
+        </div>
+        <div class="sp-stat">
+          <div class="sp-stat-label">Review Cadence</div>
+          <div class="sp-stat-value" style="font-size:13px;font-family:'DM Sans',sans-serif">${s.reviewCadence}</div>
+        </div>
+        <div class="sp-stat">
+          <div class="sp-stat-label">Comp Structure</div>
+          <div class="sp-stat-value" style="font-size:13px;font-family:'DM Sans',sans-serif">${s.compStructure}</div>
+        </div>
+      </div>
+      ${s.notes ? `<div style="padding:10px 12px;background:rgba(229,9,20,0.08);border:1px solid rgba(229,9,20,0.2);border-radius:5px;font-size:11px;color:var(--text-dim);line-height:1.6">${s.notes}</div>` : ''}
+    </div>
+
+    <div class="sp-section">
+      <div class="sp-section-title">Top Flight Risk Signals</div>
+      <div class="risk-factor-list">
+        ${ALL_EMPLOYEES.filter(e => e.segment === seg).slice(0,3).map(e => `
+          <div class="risk-factor">
+            <div class="risk-factor-dot" style="background:${e.risk>70?'var(--red)':'var(--amber)'}"></div>
+            <div class="risk-factor-text"><strong>${e.name}</strong> — ${e.signal}</div>
+            <div class="risk-factor-impact">${e.risk}% risk</div>
+          </div>
+        `).join('') || '<div style="color:var(--text-muted);font-size:12px">No high-risk employees in this segment</div>'}
+      </div>
+    </div>
+
+    <div class="sp-section">
+      <div class="sp-section-title">Development Opportunities</div>
+      <div class="opportunity-list">
+        ${opps.map(o => `
+          <div class="opportunity-item">
+            <div class="opp-header">
+              <div class="opp-title">${o.title}</div>
+              <span class="opp-type ${o.type}">${o.type}</span>
+            </div>
+            <div class="opp-desc">${o.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="action-row">
+      <div class="action-btn">Export Report</div>
+      <div class="action-btn">Schedule Review</div>
+      <div class="action-btn primary">Initiate Outreach</div>
+    </div>
+  `;
+
+  showPanel();
+}
+
+function showEmployeePanel(emp) {
+  const opps = OPPORTUNITIES[emp.segment] || [];
+
+  document.getElementById('sp-title').textContent = emp.name;
+  document.getElementById('sp-subtitle').textContent = emp.role;
+  document.getElementById('sp-chips').innerHTML = `
+    <span class="segment-chip chip-${emp.segment}">${emp.segment.toUpperCase()}</span>
+    <span style="font-size:11px;color:var(--text-dim)">${emp.location}</span>
+    <span style="font-size:11px;color:${emp.risk>70?'var(--red)':'var(--amber)'};font-family:'DM Mono',monospace">${emp.risk}% flight risk</span>
+  `;
+
+  document.getElementById('sp-body').innerHTML = `
+    <div class="sp-section">
+      <div class="sp-section-title">Employee Profile</div>
+      <div class="sp-stat-row">
+        <div class="sp-stat">
+          <div class="sp-stat-label">Tenure</div>
+          <div class="sp-stat-value" style="font-size:18px;font-family:'DM Sans',sans-serif">${emp.tenure}</div>
+        </div>
+        <div class="sp-stat">
+          <div class="sp-stat-label">Compensation</div>
+          <div class="sp-stat-value" style="font-size:14px;font-family:'DM Sans',sans-serif">${emp.comp}</div>
+        </div>
+        <div class="sp-stat">
+          <div class="sp-stat-label">Last Review</div>
+          <div class="sp-stat-value" style="font-size:14px;font-family:'DM Sans',sans-serif">${emp.lastReview}</div>
+        </div>
+        <div class="sp-stat">
+          <div class="sp-stat-label">Engagement</div>
+          <div class="sp-stat-value" style="font-size:18px;color:${emp.engagement==='Low'?'var(--red)':emp.engagement==='Medium'?'var(--amber)':'var(--green)'}">${emp.engagement}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sp-section">
+      <div class="sp-section-title">Risk Factors</div>
+      <div class="risk-factor-list">
+        <div class="risk-factor">
+          <div class="risk-factor-dot" style="background:${emp.risk>70?'var(--red)':'var(--amber)'}"></div>
+          <div class="risk-factor-text"><strong>Primary:</strong> ${emp.signal}</div>
+          <div class="risk-factor-impact">High</div>
+        </div>
+        <div class="risk-factor">
+          <div class="risk-factor-dot" style="background:var(--amber)"></div>
+          <div class="risk-factor-text"><strong>Secondary:</strong> Last review ${emp.lastReview}</div>
+          <div class="risk-factor-impact">Medium</div>
+        </div>
+        <div class="risk-factor">
+          <div class="risk-factor-dot" style="background:var(--text-muted)"></div>
+          <div class="risk-factor-text"><strong>Context:</strong> ${emp.engagement} engagement score</div>
+          <div class="risk-factor-impact">Monitor</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sp-section">
+      <div class="sp-section-title">Recommended Development Opportunities</div>
+      <div class="opportunity-list">
+        ${opps.slice(0,3).map(o => `
+          <div class="opportunity-item">
+            <div class="opp-header">
+              <div class="opp-title">${o.title}</div>
+              <span class="opp-type ${o.type}">${o.type}</span>
+            </div>
+            <div class="opp-desc">${o.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="action-row">
+      <div class="action-btn">Add Note</div>
+      <div class="action-btn">Schedule 1:1</div>
+      <div class="action-btn primary">Flag for Retention</div>
+    </div>
+  `;
+
+  showPanel();
+}
+
+// ─── AI QUERY ────────────────────────────────────────────────────────────────
+
+function setQuery(text) {
+  document.getElementById('aiInput').value = text;
+  runQuery();
+}
+
+async function runQuery() {
+  const input = document.getElementById('aiInput').value.trim();
+  if (!input) return;
+
+  const responseEl = document.getElementById('aiResponse');
+  const textEl = document.getElementById('aiResponseText');
+  const btn = document.getElementById('aiBtn');
+
+  responseEl.classList.add('visible');
+  btn.disabled = true;
+  btn.textContent = '...';
+  textEl.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:13px"><div class="dot-pulse"><span></span><span></span><span></span></div> Analyzing workforce data...</div>';
+
+  const systemPrompt = `You are an AI talent intelligence assistant embedded inside Netflix's internal Workforce Intelligence platform. Netflix has four distinct workforce segments:
+
+1. Corporate (FTE, 4,210 people) — Product, Engineering, Finance, Marketing, People Ops. Annual reviews + quarterly pulse. Salary + equity + bonus.
+2. Studio & Content (FTE, 3,890 people) — Scripted, Unscripted, Post-Production, Animation. Project-based reviews + biannual. Salary + project bonus.
+3. Union Crew (2,640 people) — SAG-AFTRA, IATSE, WGA, DGA. CBA-governed review/comp/scheduling constraints. Scale rates + residuals.
+4. Freelance & Project-based (2,107 people) — DPs, editors, composers, specialist crew. End-of-engagement surveys. Day rates.
+
+Current data: Total headcount 12,847. Flight risk: 284 flagged (30-day window). Contract renewals: 67 due in 90 days. Critical open reqs: 43.
+
+Top flight risk employees: Jordan Kim (Studio, 87% risk — no L&D 9mo), Marcus Webb (Studio, 79% — comp below band), Priya Nair (Corporate, 64% — 2 internal apps no move), Lena Torres (Freelance, 58% — contract gap 6wk).
+
+Key skill gaps: Unreal Engine 5 (81%), AI/ML Production (72%), Virtual Production (58%).
+
+Urgent contracts: WGA drama block of 14 writers (12 days), DGA agreement (28 days).
+
+Respond in this exact format — no prose paragraphs:
+
+**Key Findings**
+• [bullet with specific data point]
+• [bullet with specific data point]
+• [bullet with specific data point]
+
+**Recommended Actions**
+1. [specific action — owner — timeframe]
+2. [specific action — owner — timeframe]
+3. [specific action — owner — timeframe]
+
+Be specific. Reference actual names, numbers, and percentages from the data. Maximum 3 bullets per section. Sound like a senior People Analytics leader.`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: "user", content: input }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || "Unable to retrieve insight. Please try again.";
+    textEl.innerHTML = formatAgentText(text);
+  } catch (e) {
+    textEl.textContent = "AI analysis temporarily unavailable. Please check your connection and try again.";
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Ask →';
+}
+
+document.getElementById('aiInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runQuery();
+});
+
+
+// ─── PAGE NAVIGATION ─────────────────────────────────────────────────────────
+
+function showPage(page) {
+  ['dashboard','risk','agent','perf','skills'].forEach(p => {
+    const el = document.getElementById('page-' + p);
+    if (el) el.style.display = p === page ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-item[id^="nav-"]').forEach(n => n.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + page);
+  if (navEl) navEl.classList.add('active');
+  closePanel();
+  if (page === 'risk') renderRiskPage();
+  if (page === 'agent') initAgentPage();
+  if (page === 'perf') renderPerfPage();
+  if (page === 'skills') renderSkillsPage();
+  const titles = { dashboard:'Workforce Dashboard', risk:'Risk & Retention', agent:'Intelligence Agent', perf:'Performance & Feedback', skills:'Skills & Development' };
+  const tb = document.getElementById('topbar-page-title');
+  if (tb) tb.textContent = titles[page] || '';
+  // Update sync time with realistic stagger per page
+  const syncTimes = { dashboard: '6:14 AM', risk: '6:14 AM', agent: 'just now', perf: '6:02 AM', skills: '6:02 AM' };
+  const syncBadge = document.getElementById('sync-badge');
+  if (syncBadge) syncBadge.textContent = 'Synced today at ' + (syncTimes[page] || '6:14 AM');
+}
+
+// ─── RISK & RETENTION PAGE DATA ──────────────────────────────────────────────
+
+const ALL_RISK_EMPLOYEES = [
+  { name:'Jordan Kim', role:'Sr. Post-Production Sup.', segment:'studio', risk:87, signal:'No L&D activity 9mo', tenure:'3.5 yrs', comp:'$142K (−11% vs band)', lastReview:'14 months ago', engagement:'Low', location:'Los Angeles', interventionStatus:'escalated', interventionNote:'Flagged to HRBP. Comp review initiated.', interventionDate:'Jan 14 2026', factors:['No L&D 9mo','Comp below band','Low engagement'] },
+  { name:'Marcus Webb', role:'Lead VFX Artist', segment:'studio', risk:79, signal:'Comp below band midpoint', tenure:'2.1 yrs', comp:'$128K (−14% vs band)', lastReview:'8 months ago', engagement:'Low', location:'Vancouver', interventionStatus:'pending', interventionNote:'Manager notified. 1:1 scheduled for Feb 28.', interventionDate:'Feb 10 2026', factors:['Comp −14% vs band','No internal mobility','Low engagement'] },
+  { name:'Priya Nair', role:'Product Manager II', segment:'corporate', risk:64, signal:'2 internal apps, no move', tenure:'2.8 yrs', comp:'$185K (on band)', lastReview:'6 months ago', engagement:'Medium', location:'Los Gatos', interventionStatus:'pending', interventionNote:'Career pathing conversation scheduled.', interventionDate:'Feb 18 2026', factors:['2 internal apps rejected','No promo in 2.8yr','Manager change Q4'] },
+  { name:'Lena Torres', role:'DP / Cinematographer', segment:'freelance', risk:58, signal:'Contract gap 6+ weeks', tenure:'1.2 yrs', comp:'$1,800/day', lastReview:'End-of-engagement', engagement:'Medium', location:'New York', interventionStatus:'actioned', interventionNote:'Preferred vendor status offered. Accepted.', interventionDate:'Jan 30 2026', factors:['6wk contract gap','Rate below market','No preferred status'] },
+  { name:'Dev Sharma', role:'ML Engineer, Recs', segment:'corporate', risk:52, signal:'LinkedIn activity spike', tenure:'1.9 yrs', comp:'$230K (on band)', lastReview:'5 months ago', engagement:'Medium', location:'Los Gatos', interventionStatus:'none', interventionNote:'', interventionDate:'', factors:['LinkedIn spike','Below-avg perf rating Q3','Team reorg impact'] },
+  { name:'Amara Osei', role:'Showrunner', segment:'studio', risk:48, signal:'No internal mobility pitch', tenure:'4.2 yrs', comp:'$310K (on band)', lastReview:'11 months ago', engagement:'Medium', location:'New York', interventionStatus:'none', interventionNote:'', interventionDate:'', factors:['No L&D 11mo','No EP pitch','Review overdue'] },
+  { name:'Kenji Watanabe', role:'IATSE Gaffer', segment:'union', risk:44, signal:'CBA rate dispute open', tenure:'2.0 yrs', comp:'Scale rate', lastReview:'CBA-governed', engagement:'Low', location:'Los Angeles', interventionStatus:'pending', interventionNote:'Labor Relations engaged on rate dispute.', interventionDate:'Feb 5 2026', factors:['Open CBA dispute','Low engagement','Consecutive short contracts'] },
+  { name:'Sofia Reyes', role:'Sr. Data Scientist', segment:'corporate', risk:38, signal:'Team reorg impact', tenure:'3.1 yrs', comp:'$210K (on band)', lastReview:'4 months ago', engagement:'Medium', location:'Los Gatos', interventionStatus:'actioned', interventionNote:'New team aligned. Skip-level scheduled.', interventionDate:'Feb 12 2026', factors:['Reorg uncertainty','Manager change','Competitor offer rumor'] },
+  { name:'Tyler Brooks', role:'Sound Designer', segment:'studio', risk:35, signal:'Project end — no next assignment', tenure:'1.4 yrs', comp:'$98K (on band)', lastReview:'6 months ago', engagement:'Medium', location:'Atlanta', interventionStatus:'none', interventionNote:'', interventionDate:'', factors:['Project ending Mar 2026','No next assignment','Low pipeline visibility'] },
+  { name:'Nina Patel', role:'WGA Staff Writer', segment:'union', risk:31, signal:'Contract renewal 45 days', tenure:'2.6 yrs', comp:'WGA scale', lastReview:'CBA-governed', engagement:'High', location:'Los Angeles', interventionStatus:'actioned', interventionNote:'Renewal offer sent. Response pending.', interventionDate:'Feb 20 2026', factors:['Contract expiring','Multi-room interest','Market rate delta'] },
+  { name:'James OBrien', role:'Finance Analyst III', segment:'corporate', risk:28, signal:'No promotion in 3yr', tenure:'3.0 yrs', comp:'$140K (on band)', lastReview:'3 months ago', engagement:'Medium', location:'Los Gatos', interventionStatus:'none', interventionNote:'', interventionDate:'', factors:['No promo 3yr','Flat comp growth','Limited visibility to leadership'] },
+  { name:'Aisha Kamara', role:'Freelance Editor', segment:'freelance', risk:25, signal:'Declining engagement scores', tenure:'0.8 yrs', comp:'$600/day', lastReview:'End-of-engagement', engagement:'Medium', location:'Remote', interventionStatus:'none', interventionNote:'', interventionDate:'', factors:['Engagement score down 2 engagements','Slower response time','Competitor outreach'] },
+];
+
+const RISK_DRIVERS = [
+  { rank:'01', name:'Compensation Below Band', desc:'Employees paid below band midpoint are 3.1× more likely to exit within 6 months. Studio VFX and Corporate ML roles show the highest delta vs. market.', impact:91, affectedCount:184 },
+  { rank:'02', name:'No L&D Activity (6+ months)', desc:'Employees with no recorded development activity in 6+ months show significantly elevated flight risk, particularly at the 18-36 month tenure band.', impact:78, affectedCount:312 },
+  { rank:'03', name:'Stalled Internal Mobility', desc:'Employees who applied for internal roles and were not selected or communicated with show 2.4× elevated risk. 47 employees have 2+ unresolved internal applications.', impact:72, affectedCount:94 },
+  { rank:'04', name:'Manager Change in Last 90 Days', desc:'Recent manager transitions correlate with a 34% spike in voluntary departure intent in the 90 days following the change, particularly for tenures under 3 years.', impact:61, affectedCount:228 },
+  { rank:'05', name:'Contract Gap > 4 Weeks (Freelance)', desc:'Freelancers with engagement gaps exceeding 4 weeks show a 3× non-return rate. Currently 38 freelancers have gaps exceeding this threshold.', impact:58, affectedCount:38 },
+  { rank:'06', name:'LinkedIn Activity Spike', desc:'A 40%+ increase in LinkedIn profile activity (edits, connection growth, post engagement) is a leading indicator for passive job search behavior. 21 employees flagged this quarter.', impact:44, affectedCount:21 },
+];
+
+const COHORT_DATA = [
+  { label:'0–12 months', pct:71, retainedOf:2840, color:'var(--red)' },
+  { label:'1–2 years', pct:82, retainedOf:3210, color:'var(--amber)' },
+  { label:'2–4 years', pct:89, retainedOf:4100, color:'var(--green)' },
+  { label:'4–6 years', pct:86, retainedOf:1620, color:'var(--green)' },
+  { label:'6–10 years', pct:91, retainedOf:890, color:'var(--green)' },
+  { label:'10+ years', pct:95, retainedOf:187, color:'var(--blue)' },
+];
+
+let riskSortCol = 'risk';
+let riskSortDir = -1;
+let riskSegFilter = 'all';
+let riskStatusFilter = 'all';
+let riskSearchTerm = '';
+
+function renderRiskPage() {
+  const el = document.getElementById('risk-content');
+  el.innerHTML = `
+    <!-- Risk KPIs -->
+    <div class="kpi-row" style="margin-top:0">
+      <div class="kpi-card red">
+        <div class="kpi-label">Total Flagged</div>
+        <div class="kpi-value">284</div>
+        <div class="kpi-sub">30-day window <span class="kpi-delta down">+18 vs last qtr</span></div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Interventions Pending</div>
+        <div class="kpi-value">94</div>
+        <div class="kpi-sub">Awaiting manager action <span class="kpi-delta down">+7</span></div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Interventions Actioned</div>
+        <div class="kpi-value">142</div>
+        <div class="kpi-sub">This quarter <span class="kpi-delta up">+22</span></div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Avg. Risk Score</div>
+        <div class="kpi-value">54%</div>
+        <div class="kpi-sub">Across flagged employees <span class="kpi-delta down">+3pts</span></div>
+      </div>
+    </div>
+
+    <!-- Predictive Risk Drivers -->
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-header">
+        <div class="panel-title">Predictive Risk Drivers — Q1 2026</div>
+        <div class="panel-action">Methodology →</div>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          ${RISK_DRIVERS.map(d => `
+            <div class="driver-card">
+              <div class="driver-rank">${d.rank}</div>
+              <div class="driver-name">${d.name}</div>
+              <div class="driver-desc">${d.desc}</div>
+              <div class="driver-bar-wrap"><div class="driver-bar-fill" style="width:${d.impact}%"></div></div>
+              <div class="driver-impact">Impact score ${d.impact}/100 · ${d.affectedCount} employees affected</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom two panels -->
+    <div class="grid-2" style="margin-bottom:0">
+
+      <!-- Retention by Tenure Cohort -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Retention Rate by Tenure Cohort</div>
+          <div class="panel-action">Export →</div>
+        </div>
+        <div class="panel-body">
+          ${COHORT_DATA.map(c => `
+            <div class="cohort-row">
+              <div class="cohort-label">${c.label}</div>
+              <div class="cohort-track"><div class="cohort-fill" style="width:${c.pct}%;background:${c.color}"></div></div>
+              <div class="cohort-pct" style="color:${c.color}">${c.pct}%</div>
+              <div class="cohort-count">${c.retainedOf.toLocaleString()} emp.</div>
+            </div>
+          `).join('')}
+          <div style="margin-top:14px;padding:10px 12px;background:rgba(229,9,20,0.07);border:1px solid rgba(229,9,20,0.18);border-radius:5px;font-size:11px;color:var(--text-dim);line-height:1.6">
+            ⚠ 0–12 month cohort retention at 71% — 8pts below target. New hire onboarding and early career pathing are the highest-leverage interventions.
+          </div>
+        </div>
+      </div>
+
+      <!-- Intervention Tracker summary -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Intervention Tracker — Summary</div>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
+          ${[
+            { label:'Escalated to HRBP', count:48, color:'var(--red)', pct:17 },
+            { label:'Manager 1:1 Scheduled', count:94, color:'var(--amber)', pct:33 },
+            { label:'Actioned & Resolved', count:142, color:'var(--green)', pct:50 },
+          ].map(s => `
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:12px">
+                <span style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;border-radius:50%;background:${s.color};display:inline-block"></span>${s.label}</span>
+                <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${s.count} employees</span>
+              </div>
+              <div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden">
+                <div style="width:${s.pct}%;height:100%;background:${s.color};border-radius:3px;transition:width 0.5s ease"></div>
+              </div>
+            </div>
+          `).join('')}
+          <div style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px">Avg. Time to First Intervention</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              ${[
+                { seg:'Corporate', days:'8.2 days', color:'var(--blue)' },
+                { seg:'Studio', days:'12.4 days', color:'#ff6b6b' },
+                { seg:'Union', days:'18.1 days', color:'var(--purple)' },
+                { seg:'Freelance', days:'5.6 days', color:'var(--amber)' },
+              ].map(t => `
+                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:8px 10px">
+                  <div style="font-size:10px;color:var(--text-muted);margin-bottom:3px">${t.seg}</div>
+                  <div style="font-size:16px;font-family:'DM Serif Display',serif;color:${t.color}">${t.days}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full Flight Risk Table -->
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-header" style="flex-wrap:wrap;gap:10px">
+        <div class="panel-title">Full Flight Risk Table</div>
+        <div class="rr-filter-bar" style="margin-bottom:0">
+          <input class="rr-search" id="rr-search" placeholder="Search name or role…" oninput="applyRiskFilters()" />
+          <span class="rr-filter-label">Segment:</span>
+          <select class="rr-filter-select" id="rr-seg" onchange="applyRiskFilters()">
+            <option value="all">All</option>
+            <option value="corporate">Corporate</option>
+            <option value="studio">Studio</option>
+            <option value="union">Union</option>
+            <option value="freelance">Freelance</option>
+          </select>
+          <span class="rr-filter-label">Status:</span>
+          <select class="rr-filter-select" id="rr-status" onchange="applyRiskFilters()">
+            <option value="all">All</option>
+            <option value="escalated">Escalated</option>
+            <option value="pending">Pending</option>
+            <option value="actioned">Actioned</option>
+            <option value="none">No Action</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel-body" style="padding:0 18px">
+        <table class="full-risk-table">
+          <thead>
+            <tr>
+              <th onclick="sortRiskTable('name')">Employee <span class="sort-icon">↕</span></th>
+              <th onclick="sortRiskTable('segment')">Segment <span class="sort-icon">↕</span></th>
+              <th onclick="sortRiskTable('risk')" class="sorted">Risk Score <span class="sort-icon">↓</span></th>
+              <th>Primary Factors</th>
+              <th onclick="sortRiskTable('interventionStatus')">Intervention <span class="sort-icon">↕</span></th>
+              <th onclick="sortRiskTable('tenure')">Tenure <span class="sort-icon">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="full-risk-tbody"></tbody>
+        </table>
+        <div id="rr-empty" style="display:none;text-align:center;padding:28px;color:var(--text-muted);font-size:13px">No employees match the current filters.</div>
+      </div>
+    </div>
+  `;
+
+  applyRiskFilters();
+}
+
+function applyRiskFilters() {
+  const search = (document.getElementById('rr-search')?.value || '').toLowerCase();
+  const seg = document.getElementById('rr-seg')?.value || 'all';
+  const status = document.getElementById('rr-status')?.value || 'all';
+
+  let filtered = ALL_RISK_EMPLOYEES.filter(e => {
+    const matchSearch = !search || e.name.toLowerCase().includes(search) || e.role.toLowerCase().includes(search);
+    const matchSeg = seg === 'all' || e.segment === seg;
+    const matchStatus = status === 'all' || e.interventionStatus === status;
+    return matchSearch && matchSeg && matchStatus;
+  });
+
+  filtered.sort((a, b) => {
+    let va = a[riskSortCol], vb = b[riskSortCol];
+    if (riskSortCol === 'tenure') { va = parseFloat(va); vb = parseFloat(vb); }
+    if (va < vb) return riskSortDir;
+    if (va > vb) return -riskSortDir;
+    return 0;
+  });
+
+  const tbody = document.getElementById('full-risk-tbody');
+  const empty = document.getElementById('rr-empty');
+  if (!tbody) return;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const statusLabels = { escalated:'Escalated', pending:'Pending', actioned:'Actioned', none:'No Action' };
+  const statusClasses = { escalated:'status-escalated', pending:'status-pending', actioned:'status-actioned', none:'status-none' };
+
+  tbody.innerHTML = filtered.map(e => `
+    <tr onclick="showEmployeePanel(${JSON.stringify(e).replace(/"/g,'&quot;')})">
+      <td>
+        <div class="emp-name">${e.name}</div>
+        <div class="emp-role">${e.role} · ${e.location}</div>
+      </td>
+      <td><span class="segment-chip chip-${e.segment}">${e.segment.charAt(0).toUpperCase()+e.segment.slice(1)}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="risk-bar-wrap" style="width:60px"><div class="risk-bar" style="width:${e.risk}%;background:${e.risk>70?'var(--red)':e.risk>50?'var(--amber)':'var(--green)'}"></div></div>
+          <span style="font-size:11px;font-family:'DM Mono',monospace;color:${e.risk>70?'var(--red)':e.risk>50?'var(--amber)':'var(--green)'}">${e.risk}%</span>
+        </div>
+      </td>
+      <td>${e.factors.map(f => `<span class="risk-factor-tag">${f}</span>`).join('')}</td>
+      <td>
+        <div class="intervention-status ${statusClasses[e.interventionStatus]}">${statusLabels[e.interventionStatus]}</div>
+        ${e.interventionDate ? `<div style="font-size:10px;color:var(--text-muted);margin-top:3px;font-family:'DM Mono',monospace">${e.interventionDate}</div>` : ''}
+      </td>
+      <td style="font-size:12px;font-family:'DM Mono',monospace;color:var(--text-dim)">${e.tenure}</td>
+    </tr>
+  `).join('');
+}
+
+function sortRiskTable(col) {
+  if (riskSortCol === col) { riskSortDir *= -1; }
+  else { riskSortCol = col; riskSortDir = col === 'risk' ? -1 : 1; }
+  document.querySelectorAll('.full-risk-table th').forEach(th => {
+    th.classList.remove('sorted');
+    const icon = th.querySelector('.sort-icon');
+    if (icon) icon.textContent = '↕';
+  });
+  const cols = ['name','segment','risk','','interventionStatus','tenure'];
+  const idx = cols.indexOf(col);
+  if (idx >= 0) {
+    const ths = document.querySelectorAll('.full-risk-table th');
+    ths[idx].classList.add('sorted');
+    const icon = ths[idx].querySelector('.sort-icon');
+    if (icon) icon.textContent = riskSortDir === -1 ? '↓' : '↑';
+  }
+  applyRiskFilters();
+}
+
+
+// ─── SEGMENT HEALTH SCORECARD ────────────────────────────────────────────────
+
+const SCORECARD_DATA = {
+  all: {
+    rows: [
+      { label: 'Avg. Tenure', value: '2.8 yrs', sub: 'Across all segments', signal: null },
+      { label: 'Retention Rate', value: '86%', sub: 'Rolling 12 months', signal: { color: 'var(--amber)', text: '−2pts QoQ' } },
+      { label: 'Flight Risk Rate', value: '2.2%', sub: '284 of 12,847 flagged', signal: { color: 'var(--red)', text: '↑ trending up' } },
+      { label: 'L&D Participation', value: '61%', sub: 'Active in program', signal: { color: 'var(--green)', text: '+4pts QoQ' } },
+      { label: 'Open Critical Reqs', value: '43', sub: 'Blocking production', signal: { color: 'var(--amber)', text: '−5 vs last qtr' } },
+      { label: 'Avg. Time-to-Fill', value: '58d', sub: 'Critical roles only', signal: { color: 'var(--red)', text: '↑ +6d vs target' } },
+    ]
+  },
+  corporate: {
+    rows: [
+      { label: 'Avg. Tenure', value: '3.4 yrs', sub: 'Corporate FTEs', signal: null },
+      { label: 'Retention Rate', value: '91%', sub: 'Rolling 12 months', signal: { color: 'var(--green)', text: 'On target' } },
+      { label: 'Flight Risk Rate', value: '2.2%', sub: '94 of 4,210 flagged', signal: { color: 'var(--amber)', text: '↑ slight increase' } },
+      { label: 'L&D Participation', value: '74%', sub: 'Active in program', signal: { color: 'var(--green)', text: '+6pts QoQ' } },
+      { label: 'Promo Rate (12mo)', value: '18%', sub: 'IC promotions', signal: { color: 'var(--amber)', text: 'Below 22% target' } },
+      { label: 'Avg. Time-to-Fill', value: '38d', sub: 'Critical roles only', signal: { color: 'var(--green)', text: 'On target' } },
+    ]
+  },
+  studio: {
+    rows: [
+      { label: 'Avg. Tenure', value: '2.4 yrs', sub: 'Studio FTEs', signal: null },
+      { label: 'Retention Rate', value: '85%', sub: 'Rolling 12 months', signal: { color: 'var(--amber)', text: '−3pts QoQ' } },
+      { label: 'Flight Risk Rate', value: '2.9%', sub: '112 of 3,890 flagged', signal: { color: 'var(--red)', text: 'Highest segment' } },
+      { label: 'L&D Participation', value: '52%', sub: 'Active in program', signal: { color: 'var(--red)', text: '9pts below avg' } },
+      { label: 'Pilot Season Readiness', value: '78%', sub: 'Crew coverage Q2', signal: { color: 'var(--amber)', text: '↑ improving' } },
+      { label: 'Avg. Time-to-Fill', value: '67d', sub: 'Critical roles only', signal: { color: 'var(--red)', text: '↑ +11d vs target' } },
+    ]
+  },
+  union: {
+    rows: [
+      { label: 'Avg. Tenure', value: '3.1 yrs', sub: 'Union crew members', signal: null },
+      { label: 'Return Rate', value: '94%', sub: 'Re-engaged last 12mo', signal: { color: 'var(--green)', text: 'Strongest segment' } },
+      { label: 'Active CBAs', value: '4', sub: 'SAG, IATSE, WGA, DGA', signal: { color: 'var(--amber)', text: '2 renegotiating' } },
+      { label: 'CBA Compliance', value: '100%', sub: 'No violations on record', signal: { color: 'var(--green)', text: 'Clean quarter' } },
+      { label: 'Rate Disputes Open', value: '3', sub: 'Pending resolution', signal: { color: 'var(--amber)', text: 'Labor Relations engaged' } },
+      { label: 'Avg. Time-to-Fill', value: '91d', sub: 'Governed by CBA', signal: { color: 'var(--red)', text: 'Structural constraint' } },
+    ]
+  },
+  freelance: {
+    rows: [
+      { label: 'Avg. Engagement', value: '13 wks', sub: 'Per engagement', signal: { color: 'var(--amber)', text: '−5wk vs prior yr' } },
+      { label: 'Return Rate', value: '71%', sub: 'Re-engaged within 6mo', signal: { color: 'var(--amber)', text: '−4pts YoY' } },
+      { label: 'Preferred Vendor %', value: '34%', sub: 'Of active freelancers', signal: { color: 'var(--green)', text: '+8pts QoQ' } },
+      { label: 'Avg. Gap Duration', value: '3.2 wks', sub: 'Between engagements', signal: { color: 'var(--amber)', text: 'Above 2wk threshold' } },
+      { label: 'Contract Gap >4wk', value: '38', sub: 'At non-return risk', signal: { color: 'var(--red)', text: 'Needs outreach' } },
+      { label: 'Avg. Time-to-Fill', value: '44d', sub: 'Specialist roles', signal: { color: 'var(--amber)', text: 'On watch' } },
+    ]
+  },
+};
+
+function renderSegmentScorecard(seg) {
+  const el = document.getElementById('segment-scorecard');
+  if (!el) return;
+  const data = SCORECARD_DATA[seg] || SCORECARD_DATA['all'];
+  el.innerHTML = `
+    <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:8px;font-weight:600">Segment Health</div>
+    <div class="scorecard-grid">
+      ${data.rows.map(r => `
+        <div class="scorecard-cell" style="cursor:default">
+          <div class="scorecard-cell-label">${r.label}</div>
+          <div class="scorecard-cell-value">${r.value}</div>
+          ${r.signal
+            ? `<div class="scorecard-signal"><div class="scorecard-signal-dot" style="background:${r.signal.color}"></div><span style="color:${r.signal.color}">${r.signal.text}</span></div>`
+            : `<div class="scorecard-cell-sub">${r.sub}</div>`
+          }
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+
+// ─── INTELLIGENCE AGENT ──────────────────────────────────────────────────────
+
+const AGENT_SYSTEM_PROMPT = `You are a senior Talent Intelligence Agent embedded inside Netflix's internal workforce platform. You have deep access to the following live data:
+
+WORKFORCE SNAPSHOT (Q1 2026):
+- Total headcount: 12,847 across 4 segments
+- Corporate FTE: 4,210 | Studio FTE: 3,890 | Union Crew: 2,640 | Freelance: 2,107
+- Overall retention: 86% (rolling 12mo) — down 2pts QoQ
+- Flight risk flagged: 284 employees (2.2% rate) — up 18 from last quarter
+- Critical open reqs: 43 blocking production
+- Contract renewals due in 90 days: 67
+
+SEGMENT HEALTH SIGNALS:
+- Studio: Highest flight risk rate (2.9%), lowest L&D participation (52%), avg time-to-fill 67d. Pilot season readiness at 78%.
+- Corporate: 18% promo rate vs 22% target. 0–12mo cohort retention at 71% — 8pts below target.
+- Union: DGA agreement expiring in 28 days. IATSE Local 695 renegotiating. 3 open rate disputes.
+- Freelance: Return rate 71% (down 4pts YoY). 38 freelancers with contract gaps >4 weeks. Avg engagement duration down 5wk YoY.
+
+TOP FLIGHT RISK EMPLOYEES:
+- Jordan Kim (Studio, 87%): No L&D 9mo, comp 11% below band. Escalated to HRBP.
+- Marcus Webb (Studio, 79%): Comp 14% below band, no internal mobility. Manager notified.
+- Priya Nair (Corporate, 64%): 2 internal applications not actioned. Career pathing scheduled.
+- Dev Sharma (Corporate, 52%): LinkedIn activity spike. No intervention yet.
+
+PREDICTIVE RISK DRIVERS (ranked by impact):
+1. Comp below band (91/100 impact, 184 employees)
+2. No L&D activity 6mo+ (78/100, 312 employees)
+3. Stalled internal mobility (72/100, 94 employees)
+4. Manager change in 90 days (61/100, 228 employees)
+5. Freelance contract gap >4wk (58/100, 38 employees)
+6. LinkedIn activity spike (44/100, 21 employees)
+
+SKILLS GAPS (next slate):
+- Unreal Engine 5: 81% gap
+- AI/ML Production tooling: 72% gap
+- Virtual Production: 58% gap
+- SAG Compliance knowledge: 50% gap
+
+INTERVENTION TRACKER:
+- 48 escalated to HRBP | 94 pending manager action | 142 actioned & resolved
+- Avg time to first intervention: Corporate 8.2d, Studio 12.4d, Union 18.1d, Freelance 5.6d
+
+You must respond ONLY with a valid JSON object. No preamble, no markdown, no backticks. The JSON must exactly match the schema provided in the user message.`;
+
+const AGENT_MODES = [
+  { id: 'exec', icon: '◈', label: 'Executive Summary', badge: 'Board-ready' },
+  { id: 'hrbp', icon: '◎', label: 'HRBP Actions', badge: 'Operational' },
+  { id: 'pm', icon: '◇', label: 'Platform Health', badge: 'Admin' },
+  { id: 'patterns', icon: '△', label: 'Pattern Detection', badge: 'Analytical' },
+];
+
+let agentInitialized = false;
+let agentCurrentMode = 'exec';
+let agentCache = {};
+
+function initAgentPage() {
+  const el = document.getElementById('agent-content');
+  el.innerHTML = `
+    <div class="agent-hero">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="agent-hero-label"><div class="agent-pulse"></div> Intelligence Agent · Live</div>
+        <button class="agent-refresh-btn" onclick="refreshAgentMode()">↻ Refresh analysis</button>
+      </div>
+      <div class="agent-hero-title">Ensemble Intelligence Agent</div>
+      <div class="agent-hero-sub">Digests all workforce data in real time and surfaces actionable insights for HRBPs, executives, and product decisions. Powered by Claude.</div>
+      <div class="agent-meta">
+        <div class="agent-meta-item">⬡ <span>12,847 employees · 4 segments</span></div>
+        <div class="agent-meta-item">◎ <span>284 flight risk signals</span></div>
+        <div class="agent-meta-item">△ <span>6 predictive drivers</span></div>
+        <div class="agent-meta-item">◈ <span>Q1 2026 workforce data</span></div>
+        <div class="agent-meta-item" id="agent-last-run">○ <span>Last run: just now</span></div>
+      </div>
+    </div>
+
+    <div class="agent-mode-tabs">
+      ${AGENT_MODES.map(m => `
+        <div class="agent-mode-tab ${m.id === agentCurrentMode ? 'active' : ''}" id="agent-tab-${m.id}" onclick="switchAgentMode('${m.id}')">
+          <span class="agent-mode-icon">${m.icon}</span>
+          <span class="agent-tab-label">${m.label}</span>
+          <span class="agent-tab-badge">${m.badge}</span>
+        </div>
+      `).join('')}
+    </div>
+
+    <div id="agent-output-area"></div>
+  `;
+
+  runAgentMode(agentCurrentMode);
+}
+
+function switchAgentMode(mode) {
+  agentCurrentMode = mode;
+  document.querySelectorAll('.agent-mode-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('agent-tab-' + mode).classList.add('active');
+  if (agentCache[mode]) {
+    renderAgentOutput(mode, agentCache[mode]);
+  } else {
+    runAgentMode(mode);
+  }
+}
+
+function refreshAgentMode() {
+  delete agentCache[agentCurrentMode];
+  runAgentMode(agentCurrentMode);
+}
+
+function showAgentLoading(mode) {
+  const steps = {
+    exec: ['Aggregating segment health signals…', 'Scoring business risks by severity…', 'Drafting executive narrative…', 'Structuring board-ready output…'],
+    hrbp: ['Scanning flight risk table…', 'Prioritizing by urgency and impact…', 'Generating outreach recommendations…', 'Assigning owners and deadlines…'],
+    pm: ['Scanning platform usage patterns…', 'Identifying capability gaps in the data…', 'Sizing impact by user segment…', 'Generating platform health report…'],
+    patterns: ['Running cross-segment correlation…', 'Detecting anomalies vs. prior quarters…', 'Surfacing non-obvious patterns…', 'Validating signal strength…'],
+  };
+  const stepList = steps[mode] || steps.exec;
+  const area = document.getElementById('agent-output-area');
+  area.innerHTML = `
+    <div class="agent-loading-screen">
+      <div class="dot-pulse" style="justify-content:center;margin-bottom:16px"><span></span><span></span><span></span></div>
+      <div style="font-size:13px;color:var(--text-dim)">Agent is analyzing workforce data…</div>
+      <div class="agent-loading-steps" id="agent-steps">
+        ${stepList.map((s, i) => `
+          <div class="agent-step" id="agent-step-${i}">
+            <span class="agent-step-icon">○</span> ${s}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  // Animate steps
+  stepList.forEach((_, i) => {
+    setTimeout(() => {
+      const prev = document.getElementById('agent-step-' + (i-1));
+      if (prev) { prev.classList.remove('active'); prev.classList.add('done'); prev.querySelector('.agent-step-icon').textContent = '✓'; }
+      const cur = document.getElementById('agent-step-' + i);
+      if (cur) { cur.classList.add('active'); cur.querySelector('.agent-step-icon').textContent = '›'; }
+    }, i * 600);
+  });
+}
+
+const AGENT_PROMPTS = {
+  exec: `Return a JSON object with this exact schema:
+{
+  "summary": "3-sentence board-level narrative of the most critical workforce risks and opportunities this quarter",
+  "insights": [
+    {
+      "title": "insight title",
+      "priority": "CRITICAL|HIGH|MEDIUM",
+      "finding": "use bullet points starting with • for each key data point, max 3 bullets",
+      "actions": [
+        { "text": "specific action", "owner": "who owns it", "due": "timeframe" }
+      ]
+    }
+  ]
+}
+Include exactly 4 insights ordered by priority. Focus on risks with board-level implications: financial exposure, production risk, union/legal exposure, and talent supply chain.`,
+
+  hrbp: `Return ONLY a raw JSON object (no markdown, no backticks, no explanation) with this structure:
+{"summary":"string","insights":[{"title":"string","priority":"CRITICAL","finding":"string","actions":[{"text":"string","owner":"string","due":"string"}]}]}
+
+Rules: priority must be one of CRITICAL, HIGH, or MEDIUM. Include exactly 5 insights ordered by urgency. Be specific — name employees from the data (Jordan Kim, Marcus Webb, Priya Nair, Dev Sharma etc), quote actual numbers. Focus on: flight risk interventions, compensation corrections, contract urgencies, and intervention gaps. Each insight should have 2-3 actions.`,
+
+  pm: `You are the Talent Technology PM who owns the Ensemble platform. This is your admin view — use the workforce data to evaluate where the platform itself is falling short and what to build next. Return ONLY a raw JSON object with this structure:
+{"summary":"string","insights":[{"title":"string","priority":"CRITICAL","finding":"string","actions":[{"text":"string","owner":"string","due":"string"}]}]}
+
+Rules: priority must be one of CRITICAL, HIGH, or MEDIUM. Include exactly 5 insights. Frame each as a platform gap you are accountable for fixing — where is Ensemble creating friction, missing a signal, or failing to drive action for HRBPs? Focus on: missing data connections, workflow automation gaps, model accuracy issues, and capabilities that would materially improve HRBP intervention rates. Each insight should have 2-3 specific build actions with owners (PM, Eng, Design, Data Science) and quarters.`,
+
+  patterns: `Return a JSON object with this exact schema:
+{
+  "summary": "2-sentence summary of the most surprising or non-obvious pattern you detected across the workforce data",
+  "patterns": [
+    {
+      "label": "pattern name",
+      "finding": "1-2 short sentences max — be crisp and direct",
+      "signal": "the specific data point or correlation that reveals it",
+      "signalColor": "var(--red)|var(--amber)|var(--green)|var(--blue)"
+    }
+  ]
+}
+Include exactly 6 patterns. Look for: cross-segment correlations, leading vs lagging indicators, counterintuitive findings, trends that contradict conventional wisdom, and signals that a human analyst reviewing dashboards would likely miss.`,
+};
+
+async function runAgentMode(mode) {
+  showAgentLoading(mode);
+  const totalSteps = 4;
+  const callDelay = (totalSteps - 1) * 600 + 400;
+
+  await new Promise(r => setTimeout(r, callDelay));
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        system: AGENT_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: AGENT_PROMPTS[mode] }]
+      })
+    });
+    const data = await res.json();
+    let text = data.content?.[0]?.text || '';
+    // Robustly extract JSON - find first { to last }
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace === -1 || lastBrace === -1) throw new Error('No JSON object found in response: ' + text.substring(0, 200));
+    text = text.substring(firstBrace, lastBrace + 1);
+    const parsed = JSON.parse(text);
+    agentCache[mode] = parsed;
+    // Update last run time
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const lastRun = document.getElementById('agent-last-run');
+  if (lastRun) lastRun.innerHTML = '○ <span>Last run: ' + timeStr + '</span>';
+  renderAgentOutput(mode, parsed);
+  } catch(e) {
+    console.error('Agent error:', e);
+    document.getElementById('agent-output-area').innerHTML = `
+      <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        Agent error: ${e.message}
+        <br><br><button class="agent-refresh-btn" onclick="refreshAgentMode()">↻ Try Again</button>
+      </div>`;
+  }
+}
+
+function renderAgentOutput(mode, data) {
+  const area = document.getElementById('agent-output-area');
+  const priorities = { CRITICAL: 'critical', HIGH: 'high', MEDIUM: 'medium' };
+
+  let html = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--red);border-radius:6px;padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.75;color:var(--text)">
+      <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);font-family:'DM Mono',monospace;margin-bottom:6px;font-weight:600">Agent Summary</div>
+      ${formatAgentText(data.summary)}
+    </div>
+  `;
+
+  if (mode === 'patterns' && data.patterns) {
+    html += `<div class="pattern-grid">
+      ${data.patterns.map(p => `
+        <div class="pattern-card">
+          <div class="pattern-card-label">${p.label}</div>
+          <div class="pattern-card-finding">${formatAgentText(p.finding)}</div>
+          <div class="pattern-card-signal" style="color:${p.signalColor || 'var(--text-dim)'}">◆ ${p.signal}</div>
+        </div>
+      `).join('')}
+    </div>`;
+  } else if (data.insights) {
+    html += data.insights.map((ins, idx) => {
+      const pKey = priorities[ins.priority] || 'medium';
+      const isFirst = idx === 0;
+      return `
+        <div class="insight-card">
+          <div class="insight-card-header" onclick="toggleInsight(this)">
+            <div class="insight-card-header-left">
+              <div class="insight-priority priority-${pKey}">${idx + 1}</div>
+              <div class="insight-card-title">${ins.title}</div>
+              <span class="insight-card-badge badge-${pKey}">${ins.priority}</span>
+            </div>
+            <div class="insight-chevron ${isFirst ? 'open' : ''}">▾</div>
+          </div>
+          <div class="insight-card-body ${isFirst ? 'open' : ''}">
+            <div class="insight-finding">${formatAgentText(ins.finding)}</div>
+            <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:8px">Recommended Actions</div>
+            <div class="insight-actions">
+              ${(ins.actions || []).map((a, ai) => `
+                <div class="insight-action-item">
+                  <div class="insight-action-num">${ai + 1}</div>
+                  <div class="insight-action-text">
+                    <div>${a.text}</div>
+                    <div class="insight-action-owner">Owner: ${a.owner}</div>
+                  </div>
+                  <div class="insight-action-due">${a.due}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  area.innerHTML = `<div class="agent-output visible">${html}</div>`;
+}
+
+function toggleInsight(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.insight-chevron');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chevron.classList.toggle('open', !isOpen);
+}
+
+
+// ─── PERFORMANCE & FEEDBACK PAGE ─────────────────────────────────────────────
+
+const PERF_DATA = {
+  reviewStatus: [
+    { segment: 'Corporate', cadence: 'Annual + quarterly pulse', completion: 88, overdue: 42, upcoming: 310, color: 'var(--blue)', chip: 'chip-corporate' },
+    { segment: 'Studio FTE', cadence: 'Project-based + biannual', completion: 71, overdue: 89, upcoming: 204, color: '#ff6b6b', chip: 'chip-studio' },
+    { segment: 'Union Crew', cadence: 'CBA-governed only', completion: 100, overdue: 0, upcoming: 0, color: 'var(--purple)', chip: 'chip-union', note: 'Reviews restricted by CBA' },
+    { segment: 'Freelance', cadence: 'End-of-engagement', completion: 64, overdue: 0, upcoming: 87, color: 'var(--amber)', chip: 'chip-freelance', note: 'Triggered at contract close' },
+  ],
+  overdueEmployees: [
+    { name: 'Amara Osei', role: 'Showrunner', segment: 'studio', lastReview: '11 months ago', manager: 'VP Content, Drama', urgency: 'high' },
+    { name: 'Jordan Kim', role: 'Sr. Post-Production Sup.', segment: 'studio', lastReview: '14 months ago', manager: 'Head of Post', urgency: 'critical' },
+    { name: 'Tyler Brooks', role: 'Sound Designer', segment: 'studio', lastReview: '9 months ago', manager: 'VP Post-Production', urgency: 'high' },
+    { name: 'James OBrien', role: 'Finance Analyst III', segment: 'corporate', lastReview: '13 months ago', manager: 'Finance Director', urgency: 'high' },
+    { name: 'Priya Nair', role: 'Product Manager II', segment: 'corporate', lastReview: '6 months ago', manager: 'Sr. Director, Product', urgency: 'medium' },
+    { name: 'Dev Sharma', role: 'ML Engineer, Recs', segment: 'corporate', lastReview: '5 months ago', manager: 'Sr. Director, ML', urgency: 'medium' },
+  ],
+  feedbackHealth: [
+    { label: 'Upward feedback submitted', value: 74, color: 'var(--green)' },
+    { label: 'Peer feedback completion', value: 68, color: 'var(--green)' },
+    { label: 'Manager feedback completion', value: 81, color: 'var(--green)' },
+    { label: 'Self-assessment completion', value: 58, color: 'var(--amber)' },
+    { label: 'Reviews actioned by manager', value: 43, color: 'var(--red)' },
+    { label: 'Follow-up 1:1 scheduled', value: 39, color: 'var(--red)' },
+  ],
+};
+
+function renderPerfPage() {
+  const el = document.getElementById('perf-content');
+  const urgencyColors = { critical: 'var(--red)', high: 'var(--amber)', medium: 'var(--blue)' };
+  const urgencyLabels = { critical: 'CRITICAL', high: 'HIGH', medium: 'MEDIUM' };
+
+  el.innerHTML = `
+    <div class="kpi-row" style="margin-top:0">
+      <div class="kpi-card amber">
+        <div class="kpi-label">Reviews Overdue</div>
+        <div class="kpi-value">131</div>
+        <div class="kpi-sub">Across corporate + studio <span class="kpi-delta down">+22 vs last qtr</span></div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Overall Completion</div>
+        <div class="kpi-value">81%</div>
+        <div class="kpi-sub">Reviews completed on time <span class="kpi-delta up">+3pts</span></div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Reviews Not Actioned</div>
+        <div class="kpi-value">57%</div>
+        <div class="kpi-sub">No follow-up 1:1 scheduled <span class="kpi-delta down">Needs attention</span></div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Upcoming (30 days)</div>
+        <div class="kpi-value">601</div>
+        <div class="kpi-sub">Across all segments <span class="kpi-delta up">On track</span></div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px">
+      <!-- Review status by segment -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Review Cycle Status by Segment</div>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:14px">
+          ${PERF_DATA.reviewStatus.map(s => `
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 14px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span class="segment-chip ${s.chip}">${s.segment.toUpperCase()}</span>
+                  <span style="font-size:11px;color:var(--text-dim)">${s.cadence}</span>
+                </div>
+                <span style="font-size:12px;font-family:'DM Mono',monospace;color:${s.color}">${s.completion}% complete</span>
+              </div>
+              <div style="height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;margin-bottom:8px">
+                <div style="width:${s.completion}%;height:100%;background:${s.color};border-radius:2px"></div>
+              </div>
+              <div style="display:flex;gap:16px;font-size:11px;color:var(--text-muted)">
+                ${s.overdue > 0 ? `<span style="color:var(--red)">⚠ ${s.overdue} overdue</span>` : ''}
+                ${s.upcoming > 0 ? `<span>◷ ${s.upcoming} upcoming</span>` : ''}
+                ${s.note ? `<span style="color:var(--text-muted);font-style:italic">${s.note}</span>` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Feedback health -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Feedback Health — Q1 2026</div>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
+          ${PERF_DATA.feedbackHealth.map(f => `
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+                <span>${f.label}</span>
+                <span style="font-family:'DM Mono',monospace;color:${f.color}">${f.value}%</span>
+              </div>
+              <div style="height:4px;background:var(--surface3);border-radius:2px;overflow:hidden">
+                <div style="width:${f.value}%;height:100%;background:${f.color};border-radius:2px"></div>
+              </div>
+            </div>
+          `).join('')}
+          <div style="margin-top:8px;padding:10px 12px;background:rgba(229,9,20,0.07);border:1px solid rgba(229,9,20,0.18);border-radius:5px;font-size:11px;color:var(--text-dim);line-height:1.6">
+            ⚠ Only 39% of completed reviews have a follow-up 1:1 scheduled. Reviews without follow-up action correlate with a 2.1× increase in 90-day flight risk.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overdue reviews table -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Overdue Reviews — Action Required</div>
+        <div class="panel-action">Notify All Managers →</div>
+      </div>
+      <div class="panel-body" style="padding:0 18px">
+        <table class="full-risk-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Segment</th>
+              <th>Last Review</th>
+              <th>Manager</th>
+              <th>Urgency</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${PERF_DATA.overdueEmployees.map(e => `
+              <tr onclick="showEmployeePanel(${JSON.stringify({name:e.name,role:e.role,segment:e.segment,tenure:'—',comp:'—',lastReview:e.lastReview,engagement:'—',location:'—',risk:0,signal:'Review overdue'}).replace(/"/g,'&quot;')})" style="cursor:pointer">
+                <td>
+                  <div class="emp-name">${e.name}</div>
+                  <div class="emp-role">${e.role}</div>
+                </td>
+                <td><span class="segment-chip chip-${e.segment}">${e.segment.charAt(0).toUpperCase()+e.segment.slice(1)}</span></td>
+                <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${e.lastReview}</td>
+                <td style="font-size:12px;color:var(--text-dim)">${e.manager}</td>
+                <td>
+                  <span style="font-size:10px;font-family:'DM Mono',monospace;font-weight:600;padding:3px 8px;border-radius:3px;background:${urgencyColors[e.urgency]}22;color:${urgencyColors[e.urgency]}">${urgencyLabels[e.urgency]}</span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ─── SKILLS & DEVELOPMENT PAGE ────────────────────────────────────────────────
+
+const SKILLS_PAGE_DATA = {
+  programs: [
+    { name: 'Unreal Engine 5 Intensive', type: 'Technical', segment: 'studio', enrolled: 48, capacity: 60, gap: 81, status: 'Active', statusColor: 'var(--green)', provider: 'Epic Games / ARRI' },
+    { name: 'AI/ML Product Immersion', type: 'Product', segment: 'corporate', enrolled: 31, capacity: 40, gap: 72, status: 'Active', statusColor: 'var(--green)', provider: 'Internal / Anthropic' },
+    { name: 'Virtual Production Cert.', type: 'Technical', segment: 'studio', enrolled: 22, capacity: 30, gap: 58, status: 'Active', statusColor: 'var(--green)', provider: 'Netflix Learning' },
+    { name: 'SAG Compliance Workshop', type: 'Compliance', segment: 'union', enrolled: 64, capacity: 80, gap: 50, status: 'Active', statusColor: 'var(--green)', provider: 'Labor Relations' },
+    { name: 'Executive Presence', type: 'Leadership', segment: 'corporate', enrolled: 18, capacity: 25, gap: 38, status: 'Waitlist', statusColor: 'var(--amber)', provider: 'Korn Ferry' },
+    { name: 'Post-Production AI Tools', type: 'Technical', segment: 'studio', enrolled: 0, capacity: 40, gap: 65, status: 'Planned Q2', statusColor: 'var(--text-muted)', provider: 'TBD' },
+  ],
+  noActivity: [
+    { name: 'Jordan Kim', role: 'Sr. Post-Production Sup.', segment: 'studio', lastActivity: '9+ months', riskLink: 87 },
+    { name: 'Amara Osei', role: 'Showrunner', segment: 'studio', lastActivity: '11 months', riskLink: 48 },
+    { name: 'Kenji Watanabe', role: 'IATSE Gaffer', segment: 'union', lastActivity: '8 months', riskLink: 44 },
+    { name: 'James OBrien', role: 'Finance Analyst III', segment: 'corporate', lastActivity: '7 months', riskLink: 28 },
+    { name: 'Tyler Brooks', role: 'Sound Designer', segment: 'studio', lastActivity: '6 months', riskLink: 35 },
+    { name: 'Sofia Reyes', role: 'Sr. Data Scientist', segment: 'corporate', lastActivity: '6 months', riskLink: 38 },
+  ],
+  segmentLd: [
+    { segment: 'Corporate', pct: 74, enrolled: 3115, color: 'var(--blue)' },
+    { segment: 'Studio FTE', pct: 52, enrolled: 2023, color: '#ff6b6b' },
+    { segment: 'Union Crew', pct: 41, enrolled: 1082, color: 'var(--purple)' },
+    { segment: 'Freelance', pct: 38, enrolled: 801, color: 'var(--amber)' },
+  ],
+};
+
+function renderSkillsPage() {
+  const el = document.getElementById('skills-content');
+
+  el.innerHTML = `
+    <div class="kpi-row" style="margin-top:0">
+      <div class="kpi-card green">
+        <div class="kpi-label">Overall L&amp;D Participation</div>
+        <div class="kpi-value">61%</div>
+        <div class="kpi-sub">7,021 employees enrolled <span class="kpi-delta up">+4pts QoQ</span></div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">No Activity (6mo+)</div>
+        <div class="kpi-value">312</div>
+        <div class="kpi-sub">Top flight risk driver <span class="kpi-delta down">Needs outreach</span></div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Critical Skill Gaps</div>
+        <div class="kpi-value">6</div>
+        <div class="kpi-sub">Blocking next slate <span class="kpi-delta down">UE5 most urgent</span></div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Active Programs</div>
+        <div class="kpi-value">4</div>
+        <div class="kpi-sub">2 planned for Q2 <span class="kpi-delta up">On track</span></div>
+      </div>
+    </div>
+
+    <!-- L&D by segment + skills gap -->
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">L&amp;D Participation by Segment</div>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:14px">
+          ${SKILLS_PAGE_DATA.segmentLd.map(s => `
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+                <span style="font-weight:500">${s.segment}</span>
+                <span style="font-family:'DM Mono',monospace;color:${s.color}">${s.pct}% · ${s.enrolled.toLocaleString()} enrolled</span>
+              </div>
+              <div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden">
+                <div style="width:${s.pct}%;height:100%;background:${s.color};border-radius:4px"></div>
+              </div>
+            </div>
+          `).join('')}
+          <div style="margin-top:4px;padding:10px 12px;background:rgba(255,107,107,0.07);border:1px solid rgba(255,107,107,0.2);border-radius:5px;font-size:11px;color:var(--text-dim);line-height:1.6">
+            Studio FTE participation at 52% is 9pts below org average. Low L&D is the #2 flight risk driver — targeted outreach to studio employees with no recent activity is the highest-leverage intervention.
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills gap full list -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Skills Gaps — Next Slate</div>
+          <div class="panel-action">Export →</div>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
+          ${[
+            { name: 'Unreal Engine 5', gap: 81, segment: 'Studio', color: 'var(--red)' },
+            { name: 'AI/ML Production', gap: 72, segment: 'Studio', color: 'var(--red)' },
+            { name: 'Post-Production AI', gap: 65, segment: 'Studio', color: 'var(--red)' },
+            { name: 'Virtual Production', gap: 58, segment: 'Studio', color: 'var(--amber)' },
+            { name: 'SAG Compliance', gap: 50, segment: 'Union', color: 'var(--amber)' },
+            { name: 'AI/ML Product Mgmt', gap: 68, segment: 'Corporate', color: 'var(--red)' },
+          ].map(s => `
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="flex:1">
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                  <span style="font-weight:500">${s.name}</span>
+                  <span style="font-family:'DM Mono',monospace;font-size:11px;color:${s.color}">${s.gap}% gap</span>
+                </div>
+                <div style="height:4px;background:var(--surface3);border-radius:2px;overflow:hidden">
+                  <div style="width:${s.gap}%;height:100%;background:${s.color};border-radius:2px"></div>
+                </div>
+              </div>
+              <span class="segment-chip chip-${s.segment.toLowerCase()}" style="white-space:nowrap">${s.segment.toUpperCase()}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Programs table -->
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-header">
+        <div class="panel-title">Active &amp; Planned Programs</div>
+        <div class="panel-action">Add Program →</div>
+      </div>
+      <div class="panel-body" style="padding:0 18px">
+        <table class="full-risk-table">
+          <thead>
+            <tr>
+              <th>Program</th>
+              <th>Type</th>
+              <th>Segment</th>
+              <th>Enrollment</th>
+              <th>Gap Addressed</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${SKILLS_PAGE_DATA.programs.map(p => {
+              const enrollPct = Math.round(p.enrolled / p.capacity * 100);
+              return `
+              <tr>
+                <td>
+                  <div class="emp-name">${p.name}</div>
+                  <div class="emp-role">${p.provider}</div>
+                </td>
+                <td style="font-size:11px;color:var(--text-dim)">${p.type}</td>
+                <td><span class="segment-chip chip-${p.segment}">${p.segment.toUpperCase()}</span></td>
+                <td>
+                  <div style="font-size:11px;font-family:'DM Mono',monospace;margin-bottom:4px">${p.enrolled}/${p.capacity} seats</div>
+                  <div style="width:80px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden">
+                    <div style="width:${enrollPct}%;height:100%;background:var(--green);border-radius:2px"></div>
+                  </div>
+                </td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <div style="width:28px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden">
+                      <div style="width:${p.gap}%;height:100%;background:${p.gap>70?'var(--red)':'var(--amber)'};border-radius:2px"></div>
+                    </div>
+                    <span style="font-size:11px;font-family:'DM Mono',monospace;color:${p.gap>70?'var(--red)':'var(--amber)'}">${p.gap}%</span>
+                  </div>
+                </td>
+                <td><span style="font-size:10px;font-family:'DM Mono',monospace;font-weight:600;color:${p.statusColor}">${p.status}</span></td>
+              </tr>
+            `}).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- No activity employees -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">No L&amp;D Activity (6+ months) — Flight Risk Link</div>
+        <div class="panel-action">Send Outreach →</div>
+      </div>
+      <div class="panel-body" style="padding:0 18px">
+        <table class="full-risk-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Segment</th>
+              <th>Last Activity</th>
+              <th>Flight Risk</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${SKILLS_PAGE_DATA.noActivity.map(e => `
+              <tr onclick="showEmployeePanel(${JSON.stringify({name:e.name,role:e.role,segment:e.segment,tenure:'—',comp:'—',lastReview:'—',engagement:'Low',location:'—',risk:e.riskLink,signal:'No L&D activity'}).replace(/"/g,'&quot;')})" style="cursor:pointer">
+                <td>
+                  <div class="emp-name">${e.name}</div>
+                  <div class="emp-role">${e.role}</div>
+                </td>
+                <td><span class="segment-chip chip-${e.segment}">${e.segment.charAt(0).toUpperCase()+e.segment.slice(1)}</span></td>
+                <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${e.lastActivity}</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div class="risk-bar-wrap" style="width:60px"><div class="risk-bar" style="width:${e.riskLink}%;background:${e.riskLink>70?'var(--red)':'var(--amber)'}"></div></div>
+                    <span style="font-size:11px;font-family:'DM Mono',monospace;color:${e.riskLink>70?'var(--red)':'var(--amber)'}">${e.riskLink}%</span>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+
+// ─── TEXT FORMATTER ───────────────────────────────────────────────────────────
+
+function formatAgentText(text) {
+  if (!text) return '';
+  // Process line by line for reliable bullet/number detection
+  const lines = text.split('\n');
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    // Bold **text**
+    line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Section header (bold standalone line)
+    if (/^<strong>.+<\/strong>$/.test(line.trim())) {
+      out.push('<div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);font-family:\'DM Mono\',monospace;font-weight:600;margin:10px 0 5px">' + line.replace(/<\/?strong>/g,'') + '</div>');
+    }
+    // Bullet • or -
+    else if (/^[•\-] /.test(line)) {
+      out.push('<div style="display:flex;gap:8px;margin:3px 0;font-size:12px"><span style="color:var(--red);flex-shrink:0;margin-top:2px;font-size:9px">◆</span><span>' + line.replace(/^[•\-] /,'') + '</span></div>');
+    }
+    // Numbered item
+    else if (/^\d+\.\s/.test(line)) {
+      const num = line.match(/^(\d+)\./)[1];
+      const rest = line.replace(/^\d+\.\s*/,'');
+      out.push('<div style="display:flex;gap:8px;margin:3px 0;font-size:12px"><span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--red);flex-shrink:0;width:14px;margin-top:3px">' + num + '.</span><span>' + rest + '</span></div>');
+    }
+    // Empty line
+    else if (line.trim() === '') {
+      out.push('<div style="height:4px"></div>');
+    }
+    // Normal text
+    else {
+      out.push('<span style="font-size:12px;line-height:1.7">' + line + '</span>');
+    }
+  }
+  return out.join('');
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+renderAll('all');
+</script>
+</body>
+</html>

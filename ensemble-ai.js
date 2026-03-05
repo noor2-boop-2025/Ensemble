@@ -89,7 +89,7 @@ async function streamClaude(prompt, systemPrompt, onChunk, onDone, onError) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': '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',
+        'x-api-key': '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',
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },

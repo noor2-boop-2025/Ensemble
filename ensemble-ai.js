@@ -49,7 +49,7 @@ OPEN CRITICAL REQS: 43 roles blocking production (-5 resolved this cycle).
 
 Be concise, data-driven, and actionable. Reference specific names and numbers from the data above.
 Speak like a senior People Analytics advisor to an executive audience. No markdown headers.
-Keep responses to 3-5 sentences unless asked for more detail.
+Always respond in concise bullet points (3-5 bullets max). Each bullet should be one sentence, specific, and data-driven. Never write in long paragraphs.
 `;
 
 const AGENT_CONTEXT = `

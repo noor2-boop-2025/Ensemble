@@ -164,7 +164,7 @@ window.runQuery = async function() {
         started = true;
       }
       fullText += chunk;
-      responseText.textContent = fullText;
+      responseText.innerHTML = fullText.split('•').filter(s => s.trim()).map(s => `<div style="display:flex;gap:8px;margin-bottom:6px"><span style="color:var(--red);flex-shrink:0">•</span><span>${s.trim()}</span></div>`).join('');
     },
     () => {
       btn.disabled = false;

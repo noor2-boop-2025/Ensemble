@@ -548,7 +548,7 @@
       <div class="nav-section">Overview</div>
       <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')"><span class="nav-icon">◈</span> Workforce Dashboard</div>
       <div class="nav-item" id="nav-risk" onclick="showPage('risk')"><span class="nav-icon">◎</span> Risk & Retention</div>
-      <div class="nav-item" id="nav-agent" onclick="showPage('agent')"><span class="nav-icon" style="color:var(--red)">⬡</span> <span style="background:linear-gradient(90deg,#E50914,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600">Intelligence Agent</span></div>
+      <div class="nav-item" id="nav-agent" onclick="showPage('agent'); renderAgentPage();"><span class="nav-icon" style="color:var(--red)">⬡</span> <span style="background:linear-gradient(90deg,#E50914,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600">Intelligence Agent</span></div>
       <div class="nav-section" style="margin-top:6px">Segments</div>
       <div class="nav-item" id="nav-seg-all" onclick="showPage('dashboard');closePanel();renderAll('all')"><span class="nav-icon" style="color:var(--red)">●</span> All Segments</div>
       <div class="nav-item" onclick="activateSegment('corporate')"><span class="nav-icon" style="color:var(--blue)">●</span> Corporate</div>

@@ -1431,7 +1431,7 @@ Respond in this exact format — no prose paragraphs:
 Be specific. Reference actual names, numbers, and percentages from the data. Maximum 3 bullets per section. Sound like a senior People Analytics leader.`;
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("'https://YOUR-VERCEL-URL.vercel.app/api/chat'", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2024,7 +2024,7 @@ async function runAgentMode(mode) {
   await new Promise(r => setTimeout(r, callDelay));
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://YOUR-VERCEL-URL.vercel.app/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

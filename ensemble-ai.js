@@ -257,13 +257,25 @@ async function callClaude(prompt, systemPrompt) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
+      max_tokens: 2500,
       system: systemPrompt,
       messages: [{ role: 'user', content: prompt }]
     })
   });
   const data = await response.json();
   return data.content[0].text;
+}
+
+// ── ROBUST JSON EXTRACTOR ─────────────────────────────────────
+// Finds the first [...] array regardless of surrounding text or markdown fences
+function extractJSON(raw) {
+  const cleaned = raw.replace(/```json|```/gi, '').trim();
+  const start = cleaned.indexOf('[');
+  const end = cleaned.lastIndexOf(']');
+  if (start === -1 || end === -1 || end < start) {
+    throw new Error('No valid JSON array found in response');
+  }
+  return JSON.parse(cleaned.slice(start, end + 1));
 }
 
 // ── AI QUERY BAR ─────────────────────────────────────────────
@@ -362,7 +374,7 @@ window.renderAgentPage = async function() {
     (chunk) => { rawJson += chunk; },
     () => {
       try {
-        const insights = JSON.parse(rawJson.replace(/```json|```/g, '').trim());
+        const insights = extractJSON(rawJson);
         renderInsightCards(container, insights);
       } catch (e) {
         container.innerHTML = `<div class="agent-loading-screen"><div style="color:var(--red)">Could not parse insights. Please regenerate.</div></div>`;
@@ -533,7 +545,7 @@ window.runLDNudges = async function(btn) {
   showAuditShell(btn, 'Autonomous Agent · Sending L&D Nudges');
   try {
     const raw = await callClaude('Run the L&D nudge program now.', LD_INTERVENTION_CONTEXT);
-    const results = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    const results = extractJSON(raw);
     const segColors = { corporate: 'var(--blue)', studio: '#ff6b6b', union: 'var(--purple)', freelance: 'var(--amber)' };
     renderAuditLog(results, btn, 'Nudges Sent', 'segment', segColors);
   } catch (e) {
@@ -548,7 +560,7 @@ window.runSkillsPipeline = async function(btn) {
   showAuditShell(btn, 'Autonomous Agent · Mobilizing Skills Pipeline');
   try {
     const raw = await callClaude('Mobilize the internal skills pipeline now. Match candidates to gaps and flag external sourcing needs.', SKILLS_PIPELINE_CONTEXT);
-    const results = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    const results = extractJSON(raw);
     const segColors = { corporate: 'var(--blue)', studio: '#ff6b6b', union: 'var(--purple)', freelance: 'var(--amber)', external: 'var(--red)' };
     renderAuditLog(results, btn, 'Pipeline Mobilized', 'segment', segColors);
   } catch (e) {
@@ -563,7 +575,7 @@ window.runOnboardingSequence = async function(btn) {
   showAuditShell(btn, 'Autonomous Agent · Activating Onboarding Sequence');
   try {
     const raw = await callClaude('Activate the onboarding sequence for all open req departments now.', ONBOARDING_CONTEXT);
-    const results = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    const results = extractJSON(raw);
     const segColors = { 'Post-Production': '#ff6b6b', 'VFX & Animation': '#ff6b6b', 'Product & Engineering': 'var(--blue)', 'Studio Operations': '#ff6b6b', 'Scripted Content': '#ff6b6b', 'Marketing': 'var(--amber)', 'People & Culture': 'var(--purple)', 'Unscripted & Animation': '#ff6b6b' };
     renderAuditLog(results, btn, 'Sequence Activated', 'department', segColors);
   } catch (e) {

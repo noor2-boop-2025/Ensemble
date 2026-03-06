@@ -1469,7 +1469,6 @@ function showPage(page) {
   if (navEl) navEl.classList.add('active');
   closePanel();
   if (page === 'risk') renderRiskPage();
-  if (page === 'agent') initAgentPage();
   if (page === 'perf') renderPerfPage();
   if (page === 'skills') renderSkillsPage();
   const titles = { dashboard:'Workforce Dashboard', risk:'Risk & Retention', agent:'Intelligence Agent', perf:'Performance & Feedback', skills:'Skills & Development' };
